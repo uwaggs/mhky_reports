@@ -1,0 +1,6 @@
+---
+title: "Waterloo Warriors Men's Hockey Reports"
+format: html
+---
+
+[2024-25 - Midseason Report](https://uwaggs.github.io/mhky_reports/midseason_report_2425.html)

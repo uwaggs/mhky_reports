@@ -1,0 +1,2000 @@
+---
+title: "Waterloo Warriors MHKY 2024-25 - Midseason Report"
+format: 
+  html:
+    toc: true
+    page-layout: full
+---
+
+```{r}
+#| output: false
+#| echo: false
+library(tidyverse) # Data tidying and pipe
+library(gt) # Creating tables
+library(lubridate) # Working with dates
+library(readr) # Importing data
+library(readxl) # Importing excel
+library(reactable) # Interactive tables
+```
+
+```{r}
+#| warning: false
+#| echo: false
+player_stats <- read_csv("data files/2024-25_players.csv",
+                         col_names = c("number", "player",
+                                       "game_id", "home_away", 
+                                       "goals", "assists", "points",
+                                       "plus_minus", "pim", "pp_g",
+                                       "pp_a", "pp_p", "shots",
+                                      "shot_attempts", "sc_for", 
+                                      "sc_agst", "scoring_chance", 
+                                      "block_shots", "takeaways",
+                                      "hits", "nf_tip", "nf_screen",
+                                      "nf_rebound"),
+                         skip = 1)
+
+player_stats <- player_stats |>
+  separate(game_id, into = c("date", "opponent"), sep = "-")
+player_stats$date <- ymd(player_stats$date)
+
+goalie_stats <- read_csv("data files/2024-25_goalies.csv",
+                         col_names = c("number", "player",
+                                       "game_id", "home_away",
+                                       "win", "loss", "otw", "otl",
+                                       "sow", "sol", "minutes", 
+                                       "shots", "rebounds", "ga",
+                                       "save_percent","so_attempts",
+                                       "so_ga"),
+                         skip = 1)
+
+goalie_stats <- goalie_stats |>
+  separate(game_id, into = c("date", "opponent"), sep = "-")
+goalie_stats$date <- ymd(goalie_stats$date)
+
+team_stats <- read_csv("data files/2024-25_team.csv",
+                       col_names = c("game_id", "home_away",
+                                     "period", "gf",
+                                     "ga", "shots_for",
+                                     "shots_agst", "pp", "pp_g",
+                                     "pp_percent", "pk", "pk_kills",
+                                     "pk_percent", "nf_for",
+                                     "nf_agst", "odd_man_for", 
+                                     "odd_man_agst", "gr_a_for",
+                                     "gr_a_agst", "comments"),
+                       skip = 1)
+
+team_stats <- team_stats |>
+  separate(game_id, into = c("date", "opponent"), sep = "-")
+team_stats$date <- ymd(team_stats$date)
+
+game_id <- read_csv("data files/game_id_info.csv")
+game_id <- game_id |>
+  separate(game_id, into = c("date", "opponent"), sep = "-")
+game_id$date <- ymd(game_id$date)
+
+roster <- read_csv("data files/roster.csv")
+```
+
+# Team Stats
+
+## Summary
+
+```{r}
+#| warning: false
+#| echo: false
+team_summary <- team_stats |>
+  group_by(period) |>
+  summarise(
+    category = c("Home", "Away", "Regular Season", "All Games"),
+    gf = c(mean(gf[home_away == "Home" 
+                   & date >= as.Date("2024-10-03")]),
+           mean(gf[home_away == "Away"
+                   & date >= as.Date("2024-10-03")]),
+           mean(gf[date >= as.Date("2024-10-03")]),
+           mean(gf)),
+    ga = c(mean(ga[home_away == "Home"
+                   & date >= as.Date("2024-10-03")]),
+           mean(ga[home_away == "Away"
+                   & date >= as.Date("2024-10-03")]),
+           mean(ga[date >= as.Date("2024-10-03")]),
+           mean(ga)),
+    shots_for = c(mean(shots_for[home_away == "Home"
+                                 & date >= as.Date("2024-10-03")]),
+           mean(shots_for[home_away == "Away"
+                          & date >= as.Date("2024-10-03")]),
+           mean(shots_for[date >= as.Date("2024-10-03")]),
+           mean(shots_for)),
+    shots_agst = c(mean(shots_agst[home_away == "Home"
+                                   & date >= as.Date("2024-10-03")]),
+           mean(shots_agst[home_away == "Away"
+                           & date >= as.Date("2024-10-03")]),
+           mean(shots_agst[date >= as.Date("2024-10-03")]),
+           mean(shots_agst)),
+    pp = c(sum(pp[home_away == "Home"
+                  & date >= as.Date("2024-10-03")]),
+           sum(pp[home_away == "Away"
+                  & date >= as.Date("2024-10-03")]),
+           sum(pp[date >= as.Date("2024-10-03")]),
+           sum(pp)),
+    pp_g = c(sum(pp_g[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           sum(pp_g[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           sum(pp_g[date >= as.Date("2024-10-03")]),
+           sum(pp_g)),
+    pk = c(sum(pk[home_away == "Home"
+                  & date >= as.Date("2024-10-03")]),
+           sum(pk[home_away == "Away"
+                  & date >= as.Date("2024-10-03")]),
+           sum(pk[date >= as.Date("2024-10-03")]),
+           sum(pk)),
+    pk_kills = c(sum(pk_kills[home_away == "Home"
+                              & date >= as.Date("2024-10-03")]),
+           sum(pk_kills[home_away == "Away"
+                        & date >= as.Date("2024-10-03")]),
+           sum(pk_kills[date >= as.Date("2024-10-03")]),
+           sum(pk_kills)),
+    nf_for = c(mean(nf_for[home_away == "Home"
+                           & date >= as.Date("2024-10-03")], na.rm = TRUE),
+           mean(nf_for[home_away == "Away"
+                       & date >= as.Date("2024-10-03")], na.rm = TRUE),
+           mean(nf_for[date >= as.Date("2024-10-03")], 
+                na.rm = TRUE),
+           mean(nf_for, na.rm = TRUE)),
+    nf_agst = c(mean(nf_agst[home_away == "Home"
+                             & date >= as.Date("2024-10-03")], na.rm = TRUE),
+           mean(nf_agst[home_away == "Away"
+                & date >= as.Date("2024-10-03")], na.rm = TRUE),
+           mean(nf_agst[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(nf_agst, na.rm = TRUE)),
+    odd_man_for = c(mean(odd_man_for[home_away == "Home"
+                                     & date >= as.Date("2024-10-03")],
+                    na.rm = TRUE),
+           mean(odd_man_for[home_away == "Away"
+                            & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(odd_man_for[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(odd_man_for, na.rm = TRUE)),
+    odd_man_agst = c(mean(odd_man_agst[home_away == "Home"
+                                       & date >= as.Date("2024-10-03")],
+                          na.rm = TRUE),
+           mean(odd_man_agst[home_away == "Away"
+                             & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(odd_man_agst[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(odd_man_agst,
+                na.rm = TRUE)),
+    gr_a_for = c(mean(gr_a_for[home_away == "Home"
+                               & date >= as.Date("2024-10-03")],
+                      na.rm = TRUE),
+           mean(gr_a_for[home_away == "Away"
+                         & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(gr_a_for[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(gr_a_for,
+                na.rm = TRUE)),
+    gr_a_agst = c(mean(gr_a_agst[home_away == "Home"
+                                 & date >= as.Date("2024-10-03")],
+                       na.rm = TRUE),
+           mean(gr_a_agst[home_away == "Away"
+                          & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(gr_a_agst[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(gr_a_agst,
+                na.rm = TRUE)),
+    .groups = "drop"
+  )
+
+team_summary <- team_summary |>
+  mutate(pp_percent = pp_g/pp,
+         pk_percent = pk_kills/pk) |>
+  select(period, category, gf, ga, shots_for, shots_agst,
+         pp, pp_g, pp_percent, pk, pk_kills, pk_percent,
+         nf_for, nf_agst, odd_man_for, odd_man_agst,
+         gr_a_for, gr_a_agst) |>
+  filter(period %in% c(1,2,3,"Total"))
+```
+
+::: panel-tabset
+## Home
+
+```{r}
+#| warning: false
+#| echo: false
+team_summary_home <- team_summary |>
+  filter(category == "Home") |>
+  select(-category)
+
+reactable(
+  team_summary_home,
+  columns = list(
+    period = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Period",
+      width = 150
+    ),
+    gf = colDef(header = "Goals For",
+                format = colFormat(digits = 2)),
+    ga = colDef(header = "Goals Against", 
+                   format = colFormat(digits = 2)),
+    shots_for = colDef(header = "Shots For",
+                     format = colFormat(digits = 2)),
+    shots_agst = colDef(header = "Shots Against",
+                    format = colFormat(digits = 2)),
+    pp = colDef(header = "PP Opp"),
+    pp_g = colDef(header = "PP Goals"),
+    pp_percent = colDef(header = "PP %",
+                  format = colFormat(digits = 2)),
+    pk = colDef(header = "PK Opp"),
+    pk_kills = colDef(header = "PK Kills"),
+    pk_percent = colDef(header = "PK %",
+                    format = colFormat(digits = 2)),
+    nf_for = colDef(header = "Net Front +",
+                     format = colFormat(digits = 2)),
+    nf_agst = colDef(header = "Net Front -",
+                            format = colFormat(digits = 2)),
+    odd_man_for = colDef(header = "Odd Man +",
+                         format = colFormat(digits = 2)),
+    odd_man_agst = colDef(header = "Odd Man -",
+                       format = colFormat(digits = 2)),
+    gr_a_for = colDef(header = "Grade A +",
+                  format = colFormat(digits = 2)),
+    gr_a_agst = colDef(header = "Grade A -",
+                    format = colFormat(digits = 2))
+    ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Away
+
+```{r}
+#| warning: false
+#| echo: false
+team_summary_away <- team_summary |>
+  filter(category == "Away") |>
+  select(-category)
+
+reactable(
+  team_summary_away,
+  columns = list(
+    period = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Period",
+      width = 150
+    ),
+    gf = colDef(header = "Goals For",
+                format = colFormat(digits = 2)),
+    ga = colDef(header = "Goals Against", 
+                   format = colFormat(digits = 2)),
+    shots_for = colDef(header = "Shots For",
+                     format = colFormat(digits = 2)),
+    shots_agst = colDef(header = "Shots Against",
+                    format = colFormat(digits = 2)),
+    pp = colDef(header = "PP Opp"),
+    pp_g = colDef(header = "PP Goals"),
+    pp_percent = colDef(header = "PP %",
+                  format = colFormat(digits = 2)),
+    pk = colDef(header = "PK Opp"),
+    pk_kills = colDef(header = "PK Kills"),
+    pk_percent = colDef(header = "PK %",
+                    format = colFormat(digits = 2)),
+    nf_for = colDef(header = "Net Front +",
+                     format = colFormat(digits = 2)),
+    nf_agst = colDef(header = "Net Front -",
+                            format = colFormat(digits = 2)),
+    odd_man_for = colDef(header = "Odd Man +",
+                         format = colFormat(digits = 2)),
+    odd_man_agst = colDef(header = "Odd Man -",
+                       format = colFormat(digits = 2)),
+    gr_a_for = colDef(header = "Grade A +",
+                  format = colFormat(digits = 2)),
+    gr_a_agst = colDef(header = "Grade A -",
+                    format = colFormat(digits = 2))
+    ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Regular Season
+
+```{r}
+#| warning: false
+#| echo: false
+team_summary_rs <- team_summary |>
+  filter(category == "Regular Season") |>
+  select(-category)
+
+reactable(
+  team_summary_rs,
+  columns = list(
+    period = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Period",
+      width = 150
+    ),
+    gf = colDef(header = "Goals For",
+                format = colFormat(digits = 2)),
+    ga = colDef(header = "Goals Against", 
+                   format = colFormat(digits = 2)),
+    shots_for = colDef(header = "Shots For",
+                     format = colFormat(digits = 2)),
+    shots_agst = colDef(header = "Shots Against",
+                    format = colFormat(digits = 2)),
+    pp = colDef(header = "PP Opp"),
+    pp_g = colDef(header = "PP Goals"),
+    pp_percent = colDef(header = "PP %",
+                  format = colFormat(digits = 2)),
+    pk = colDef(header = "PK Opp"),
+    pk_kills = colDef(header = "PK Kills"),
+    pk_percent = colDef(header = "PK %",
+                    format = colFormat(digits = 2)),
+    nf_for = colDef(header = "Net Front +",
+                     format = colFormat(digits = 2)),
+    nf_agst = colDef(header = "Net Front -",
+                            format = colFormat(digits = 2)),
+    odd_man_for = colDef(header = "Odd Man +",
+                         format = colFormat(digits = 2)),
+    odd_man_agst = colDef(header = "Odd Man -",
+                       format = colFormat(digits = 2)),
+    gr_a_for = colDef(header = "Grade A +",
+                  format = colFormat(digits = 2)),
+    gr_a_agst = colDef(header = "Grade A -",
+                    format = colFormat(digits = 2))
+    ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## All Games
+
+```{r}
+#| warning: false
+#| echo: false
+team_summary_all <- team_summary |>
+  filter(category == "All Games") |>
+  select(-category)
+
+reactable(
+  team_summary_all,
+  columns = list(
+    period = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Period",
+      width = 150
+    ),
+    gf = colDef(header = "Goals For",
+                format = colFormat(digits = 2)),
+    ga = colDef(header = "Goals Against", 
+                   format = colFormat(digits = 2)),
+    shots_for = colDef(header = "Shots For",
+                     format = colFormat(digits = 2)),
+    shots_agst = colDef(header = "Shots Against",
+                    format = colFormat(digits = 2)),
+    pp = colDef(header = "PP Opp"),
+    pp_g = colDef(header = "PP Goals"),
+    pp_percent = colDef(header = "PP %",
+                  format = colFormat(digits = 2)),
+    pk = colDef(header = "PK Opp"),
+    pk_kills = colDef(header = "PK Kills"),
+    pk_percent = colDef(header = "PK %",
+                    format = colFormat(digits = 2)),
+    nf_for = colDef(header = "Net Front +",
+                     format = colFormat(digits = 2)),
+    nf_agst = colDef(header = "Net Front -",
+                            format = colFormat(digits = 2)),
+    odd_man_for = colDef(header = "Odd Man +",
+                         format = colFormat(digits = 2)),
+    odd_man_agst = colDef(header = "Odd Man -",
+                       format = colFormat(digits = 2)),
+    gr_a_for = colDef(header = "Grade A +",
+                  format = colFormat(digits = 2)),
+    gr_a_agst = colDef(header = "Grade A -",
+                    format = colFormat(digits = 2))
+    ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+:::
+
+Some insights:
+
+-   2nd period is most productive for goals and shots.
+
+-   Give up most shots in the 1st, but most goals in the 3rd.
+
+-   PP % high at home in the 3rd period.
+
+-   Losing net front, odd man, and grade As on average.
+
+## Net Front
+
+Relationship between winning and our net front
+
+```{r}
+#| warning: false
+#| echo: false
+goalie_stats_join <- goalie_stats |>
+  mutate(rec = win + loss + otw + otl + sow + sol) |>
+  filter(rec != 0) |>
+  select(-rec)
+
+result_averages <- team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total") |>
+  select(-number, -player, -minutes, -shots, -rebounds,
+         -ga.y, -save_percent, -so_attempts, -so_ga) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L"),
+         tot_nf = nf_for + nf_agst) |>
+  filter(tot_nf != 0) |>
+  group_by(result) |>
+  summarise(
+    avg_x = mean(nf_for),
+    avg_y = mean(nf_agst)
+  )
+
+avg_x_win <- result_averages |> pull(2)
+avg_x_win <- avg_x_win[2]
+avg_y_win <- result_averages |> pull(3)
+avg_y_win <- avg_y_win[2]
+avg_x_loss <- result_averages |> pull(2)
+avg_x_loss <- avg_x_loss[1]
+avg_y_loss <- result_averages |> pull(3)
+avg_y_loss <- avg_y_loss[1]
+
+team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total") |>
+  select(-number, -player, -minutes, -shots, -rebounds,
+         -ga.y, -save_percent, -so_attempts, -so_ga) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L"),
+         tot_nf = nf_for + nf_agst) |>
+  filter(tot_nf != 0) |>
+  select(date, nf_for, nf_agst, result) |>
+  ggplot(aes(x = nf_for, y = nf_agst, col = result)) +
+  geom_point(size = 3) +
+  geom_point(aes(x = avg_x_win, 
+                 y = avg_y_win), 
+             inherit.aes = FALSE, 
+             color = "#56bdc2", 
+             size = 5, shape = 4) +
+  geom_point(aes(x = avg_x_loss, 
+                 y = avg_y_loss), 
+             inherit.aes = FALSE, 
+             color = "#e77d72", 
+             size = 5, shape = 4) +
+  labs(x = "Net Front +",
+       y = "Net Front -",
+       col = "Result")
+```
+
+## Odd Man
+
+Relationship between winning and odd man
+
+```{r}
+#| warning: false
+#| echo: false
+goalie_stats_join <- goalie_stats |>
+  mutate(rec = win + loss + otw + otl + sow + sol) |>
+  filter(rec != 0) |>
+  select(-rec)
+
+result_averages <- team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total") |>
+  select(-number, -player, -minutes, -shots, -rebounds,
+         -ga.y, -save_percent, -so_attempts, -so_ga) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L"),
+         tot_odd = odd_man_for + odd_man_agst) |>
+  filter(tot_odd != 0) |>
+  group_by(result) |>
+  summarise(
+    avg_x = mean(odd_man_for),
+    avg_y = mean(odd_man_agst)
+  )
+
+avg_x_win <- result_averages |> pull(2)
+avg_x_win <- avg_x_win[2]
+avg_y_win <- result_averages |> pull(3)
+avg_y_win <- avg_y_win[2]
+avg_x_loss <- result_averages |> pull(2)
+avg_x_loss <- avg_x_loss[1]
+avg_y_loss <- result_averages |> pull(3)
+avg_y_loss <- avg_y_loss[1]
+
+team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total") |>
+  select(-number, -player, -minutes, -shots, -rebounds,
+         -ga.y, -save_percent, -so_attempts, -so_ga) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L"),
+         tot_odd = odd_man_for + odd_man_agst) |>
+  filter(tot_odd != 0) |>
+  select(date, odd_man_for, odd_man_agst, result) |>
+  ggplot(aes(x = odd_man_for, y = odd_man_agst, col = result)) +
+  geom_point(size = 3) +
+  geom_point(aes(x = avg_x_win, 
+                 y = avg_y_win), 
+             inherit.aes = FALSE, 
+             color = "#56bdc2", 
+             size = 5, shape = 4) +
+  geom_point(aes(x = avg_x_loss, 
+                 y = avg_y_loss), 
+             inherit.aes = FALSE, 
+             color = "#e77d72", 
+             size = 5, shape = 4) +
+  labs(x = "Odd Man +",
+       y = "Odd Man -",
+       col = "Result")
+```
+
+## Grade As
+
+Relationship between winning and grade A chances.
+
+```{r}
+#| warning: false
+#| echo: false
+goalie_stats_join <- goalie_stats |>
+  mutate(rec = win + loss + otw + otl + sow + sol) |>
+  filter(rec != 0) |>
+  select(-rec)
+
+result_averages <- team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total") |>
+  select(-number, -player, -minutes, -shots, -rebounds,
+         -ga.y, -save_percent, -so_attempts, -so_ga) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L"),
+         tot_gra = gr_a_for + gr_a_agst) |>
+  filter(tot_gra != 0) |>
+  group_by(result) |>
+  summarise(
+    avg_x = mean(gr_a_for),
+    avg_y = mean(gr_a_agst)
+  )
+
+avg_x_win <- result_averages |> pull(2)
+avg_x_win <- avg_x_win[2]
+avg_y_win <- result_averages |> pull(3)
+avg_y_win <- avg_y_win[2]
+avg_x_loss <- result_averages |> pull(2)
+avg_x_loss <- avg_x_loss[1]
+avg_y_loss <- result_averages |> pull(3)
+avg_y_loss <- avg_y_loss[1]
+
+
+team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total") |>
+  select(-number, -player, -minutes, -shots, -rebounds,
+         -ga.y, -save_percent, -so_attempts, -so_ga) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L"),
+         tot_gra = gr_a_for + gr_a_agst) |>
+  filter(tot_gra != 0) |>
+  select(date, gr_a_for, gr_a_agst, result) |>
+  ggplot(aes(x = gr_a_for, y = gr_a_agst, col = result)) +
+  geom_point(size = 3) +
+  geom_point(aes(x = avg_x_win, 
+                 y = avg_y_win), 
+             inherit.aes = FALSE, 
+             color = "#56bdc2", 
+             size = 5, shape = 4) +
+  geom_point(aes(x = avg_x_loss, 
+                 y = avg_y_loss), 
+             inherit.aes = FALSE, 
+             color = "#e77d72", 
+             size = 5, shape = 4) +
+  labs(x = "Grade A +",
+       y = "Grade A -",
+       col = "Result")
+```
+
+## Win/Loss Breakdown
+
+Regular season only:
+
+```{r}
+#| warning: false
+#| echo: false
+
+shots_breakdown <- team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total" 
+         & date >= as.Date("2024-10-03")) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L")) |>
+  rename(ga = ga.x)
+
+shots_breakdown$result = factor(shots_breakdown$result,
+                                levels = c("W", "L"))
+
+shots_breakdown |>
+  group_by(result) |>
+  summarize(avg_sf = mean(shots_for),
+            avg_gf = mean(gf),
+            avg_sa = mean(shots_agst),
+            avg_ga = mean(ga),
+            pp_opp = sum(pp),
+            pp_g = sum(pp_g),
+            pp_percent = sum(pp_g)/sum(pp),
+            pk_opp = sum(pk),
+            pk_kills = sum(pk_kills),
+            pk_percent = sum(pk_kills)/sum(pk),
+            nf_for = mean(nf_for, na.rm = TRUE),
+            nf_agst = mean(nf_agst, na.rm = TRUE),
+            odd_man_for = mean(odd_man_for, na.rm = TRUE),
+            odd_man_agst = mean(odd_man_agst, na.rm = TRUE),
+            gr_a_for = mean(gr_a_for, na.rm = TRUE),
+            gr_a_agst = mean(gr_a_agst, na.rm = TRUE)) |>
+  ungroup() |>
+  gt() |>
+  tab_row_group(
+    group = "Loss",
+    rows = result == "L"
+  ) |>
+  tab_row_group(
+    group = "Win",
+    rows = result == "W"
+  ) |>
+  cols_hide(columns = c(result)) |>
+  opt_row_striping() |>
+  fmt_number(
+    columns = c(avg_ga, avg_sa, avg_gf, avg_sf,
+                pp_percent, pk_percent,
+                nf_for, nf_agst, odd_man_for, odd_man_agst,
+                gr_a_for, gr_a_agst),
+    decimals = 2
+  ) |>
+  cols_label(result = "Result",
+             avg_ga = "Avg Goals Against",
+             avg_sa = "Avg Shots Against",
+             avg_gf = "Avg Goals For",
+             avg_sf = "Avg Shots For",
+             pp_opp = "PP Opp",
+             pp_g = "PP Goals",
+             pp_percent = "PP %",
+             pk_opp = "PK Opp",
+             pk_kills = "PK Kills",
+             pk_percent = "PK %",
+             nf_for = "Net Front +",
+             nf_agst = "Net Front -",
+             odd_man_for = "Odd Man +",
+             odd_man_agst = "Odd Man -",
+             gr_a_for = "Grade A +",
+             gr_a_agst = "Grade A -")
+```
+
+```{r}
+#| warning: false
+#| echo: false
+
+shots_breakdown2 <- team_stats |>
+  left_join(goalie_stats_join, 
+            by = join_by(date, opponent, home_away)) |>
+  filter(period == "Total" 
+         & date >= as.Date("2024-10-03")) |>
+  mutate(result = if_else(win == 1 | otw == 1 | sow == 1, 
+                          "W", "L")) |>
+  rename(ga = ga.x) |>
+  mutate(
+    result2 = if_else(result == "W", "W",
+                      if_else(result == "L" & (ga-gf) <= 1,
+                              "L1", "L2+"))
+  )
+
+shots_breakdown2$result2 = factor(shots_breakdown2$result2,
+                                levels = c("W", "L1", "L2+"))
+
+shots_breakdown2 |>
+  group_by(result2) |>
+  summarize(avg_sf = mean(shots_for),
+            avg_gf = mean(gf),
+            avg_sa = mean(shots_agst),
+            avg_ga = mean(ga),
+            pp_opp = sum(pp),
+            pp_g = sum(pp_g),
+            pp_percent = sum(pp_g)/sum(pp),
+            pk_opp = sum(pk),
+            pk_kills = sum(pk_kills),
+            pk_percent = sum(pk_kills)/sum(pk),
+            nf_for = mean(nf_for, na.rm = TRUE),
+            nf_agst = mean(nf_agst, na.rm = TRUE),
+            odd_man_for = mean(odd_man_for, na.rm = TRUE),
+            odd_man_agst = mean(odd_man_agst, na.rm = TRUE),
+            gr_a_for = mean(gr_a_for, na.rm = TRUE),
+            gr_a_agst = mean(gr_a_agst, na.rm = TRUE)) |>
+  ungroup() |>
+  gt() |>
+  tab_row_group(
+    group = "Loss by 2+",
+    rows = result2 == "L2+"
+  ) |>
+  tab_row_group(
+    group = "Loss by 1",
+    rows = result2 == "L1"
+  ) |>
+  tab_row_group(
+    group = "Win",
+    rows = result2 == "W"
+  ) |>
+  cols_hide(columns = c(result2)) |>
+  opt_row_striping() |>
+  fmt_number(
+    columns = c(avg_ga, avg_sa, avg_gf, avg_sf,
+                pp_percent, pk_percent,
+                nf_for, nf_agst, odd_man_for, odd_man_agst,
+                gr_a_for, gr_a_agst),
+    decimals = 2
+  ) |>
+  cols_label(result2 = "Result",
+             avg_ga = "Avg Goals Against",
+             avg_sa = "Avg Shots Against",
+             avg_gf = "Avg Goals For",
+             avg_sf = "Avg Shots For",
+             pp_opp = "PP Opp",
+             pp_g = "PP Goals",
+             pp_percent = "PP %",
+             pk_opp = "PK Opp",
+             pk_kills = "PK Kills",
+             pk_percent = "PK %",
+             nf_for = "Net Front +",
+             nf_agst = "Net Front -",
+             odd_man_for = "Odd Man +",
+             odd_man_agst = "Odd Man -",
+             gr_a_for = "Grade A +",
+             gr_a_agst = "Grade A -")
+```
+
+
+# Player Stats
+
+## Summary
+
+Totals:
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary1 <- player_stats |>
+  group_by(player) |>
+  summarise(
+    category = c("Home", "Away", "Regular Season", "All Games"),
+    gp = c(sum(home_away == "Home" 
+               & date >= as.Date("2024-10-03")),
+           sum(home_away == "Away"
+               & date >= as.Date("2024-10-03")),
+           sum(date >= as.Date("2024-10-03")),
+           n()),
+    goals = c(sum(goals[home_away == "Home"
+                        & date >= as.Date("2024-10-03")]),
+           sum(goals[home_away == "Away"
+                     & date >= as.Date("2024-10-03")]),
+           sum(goals[date >= as.Date("2024-10-03")]),
+           sum(goals)),
+    assists = c(sum(assists[home_away == "Home"
+                            & date >= as.Date("2024-10-03")]),
+           sum(assists[home_away == "Away"
+                       & date >= as.Date("2024-10-03")]),
+           sum(assists[date >= as.Date("2024-10-03")]),
+           sum(assists)),
+    points = c(sum(points[home_away == "Home"
+                          & date >= as.Date("2024-10-03")]),
+           sum(points[home_away == "Away"
+                      & date >= as.Date("2024-10-03")]),
+           sum(points[date >= as.Date("2024-10-03")]),
+           sum(points)),
+    plus_minus = c(sum(plus_minus[home_away == "Home"
+                                  & date >= as.Date("2024-10-03")]),
+           sum(plus_minus[home_away == "Away"
+                          & date >= as.Date("2024-10-03")]),
+           sum(plus_minus[date >= as.Date("2024-10-03")]),
+           sum(plus_minus)),
+    pim = c(sum(pim[home_away == "Home"
+                    & date >= as.Date("2024-10-03")]),
+           sum(pim[home_away == "Away"
+                   & date >= as.Date("2024-10-03")]),
+           sum(pim[date >= as.Date("2024-10-03")]),
+           sum(pim)),
+    pp_g = c(sum(pp_g[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           sum(pp_g[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           sum(pp_g[date >= as.Date("2024-10-03")]),
+           sum(pp_g)),
+    pp_a = c(sum(pp_a[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           sum(pp_a[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           sum(pp_a[date >= as.Date("2024-10-03")]),
+           sum(pp_a)),
+    pp_p = c(sum(pp_p[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           sum(pp_p[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           sum(pp_p[date >= as.Date("2024-10-03")]),
+           sum(pp_p)),
+    sc_for = c(sum(sc_for[home_away == "Home"
+                          & date >= as.Date("2024-10-03")]),
+           sum(sc_for[home_away == "Away"
+                      & date >= as.Date("2024-10-03")]),
+           sum(sc_for[date >= as.Date("2024-10-03")]),
+           sum(sc_for)),
+    sc_agst = c(sum(sc_agst[home_away == "Home"
+                            & date >= as.Date("2024-10-03")]),
+           sum(sc_agst[home_away == "Away"
+                       & date >= as.Date("2024-10-03")]),
+           sum(sc_agst[date >= as.Date("2024-10-03")]),
+           sum(sc_agst)),
+    scoring_chance = c(sum(scoring_chance[home_away == "Home"
+                                          & date >= as.Date("2024-10-03")]),
+           sum(scoring_chance[home_away == "Away"
+                              & date >= as.Date("2024-10-03")]),
+           sum(scoring_chance[date >= as.Date("2024-10-03")]),
+           sum(scoring_chance)),
+    block_shots = c(sum(block_shots[home_away == "Home"
+                                    & date >= as.Date("2024-10-03")]),
+           sum(block_shots[home_away == "Away"
+                           & date >= as.Date("2024-10-03")]),
+           sum(block_shots[date >= as.Date("2024-10-03")]),
+           sum(block_shots)),
+    takeaways = c(sum(takeaways[home_away == "Home"
+                                & date >= as.Date("2024-10-03")]),
+           sum(takeaways[home_away == "Away"
+                         & date >= as.Date("2024-10-03")]),
+           sum(takeaways[date >= as.Date("2024-10-03")]),
+           sum(takeaways)),
+    hits = c(sum(hits[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           sum(hits[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           sum(hits[date >= as.Date("2024-10-03")]),
+           sum(hits)),
+    nf_tip = c(sum(nf_tip[home_away == "Home"
+                          & date >= as.Date("2024-10-03")]),
+           sum(nf_tip[home_away == "Away"
+                      & date >= as.Date("2024-10-03")]),
+           sum(nf_tip[date >= as.Date("2024-10-03")]),
+           sum(nf_tip)),
+    nf_screen = c(sum(nf_screen[home_away == "Home"
+                                & date >= as.Date("2024-10-03")]),
+           sum(nf_screen[home_away == "Away"
+                         & date >= as.Date("2024-10-03")]),
+           sum(nf_screen[date >= as.Date("2024-10-03")]),
+           sum(nf_screen)),
+    nf_rebound = c(sum(nf_rebound[home_away == "Home"
+                                  & date >= as.Date("2024-10-03")]),
+           sum(nf_rebound[home_away == "Away"
+                          & date >= as.Date("2024-10-03")]),
+           sum(nf_rebound[date >= as.Date("2024-10-03")]),
+           sum(nf_rebound)),
+    .groups = "drop"
+  )
+```
+
+::: panel-tabset
+## Home
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary1_home <- player_summary1 |>
+  filter(category == "Home") |>
+  select(-category)
+
+reactable(
+  player_summary1_home,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals"),
+    assists = colDef(header = "Assists"),
+    points = colDef(header = "Points"),
+    plus_minus = colDef(header = "+/-"),
+    pim = colDef(header = "PIM"),
+    pp_g = colDef(header = "PP G"),
+    pp_a = colDef(header = "PP A"),
+    pp_p = colDef(header = "PP P"),
+    sc_for = colDef(header = "Scoring Chances +"),
+    sc_agst = colDef(header = "Scoring Chances -"),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125),
+    block_shots = colDef(header = "Blocked Shots"),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125),
+    hits = colDef(header = "Hits"),
+    nf_tip = colDef(header = "NF Tip"),
+    nf_screen = colDef(header = "NF Screen"),
+    nf_rebound = colDef(header = "NF Rebound")
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Away
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary1_away <- player_summary1 |>
+  filter(category == "Away") |>
+  select(-category)
+
+reactable(
+  player_summary1_away,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals"),
+    assists = colDef(header = "Assists"),
+    points = colDef(header = "Points"),
+    plus_minus = colDef(header = "+/-"),
+    pim = colDef(header = "PIM"),
+    pp_g = colDef(header = "PP G"),
+    pp_a = colDef(header = "PP A"),
+    pp_p = colDef(header = "PP P"),
+    sc_for = colDef(header = "Scoring Chances +"),
+    sc_agst = colDef(header = "Scoring Chances -"),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125),
+    block_shots = colDef(header = "Blocked Shots"),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125),
+    hits = colDef(header = "Hits"),
+    nf_tip = colDef(header = "NF Tip"),
+    nf_screen = colDef(header = "NF Screen"),
+    nf_rebound = colDef(header = "NF Rebound")
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Regular Season
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary1_rs <- player_summary1 |>
+  filter(category == "Regular Season") |>
+  select(-category)
+
+reactable(
+  player_summary1_rs,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals"),
+    assists = colDef(header = "Assists"),
+    points = colDef(header = "Points"),
+    plus_minus = colDef(header = "+/-"),
+    pim = colDef(header = "PIM"),
+    pp_g = colDef(header = "PP G"),
+    pp_a = colDef(header = "PP A"),
+    pp_p = colDef(header = "PP P"),
+    sc_for = colDef(header = "Scoring Chances +"),
+    sc_agst = colDef(header = "Scoring Chances -"),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125),
+    block_shots = colDef(header = "Blocked Shots"),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125),
+    hits = colDef(header = "Hits"),
+    nf_tip = colDef(header = "NF Tip"),
+    nf_screen = colDef(header = "NF Screen"),
+    nf_rebound = colDef(header = "NF Rebound")
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## All Games
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary1_all <- player_summary1 |>
+  filter(category == "All Games") |>
+  select(-category)
+
+reactable(
+  player_summary1_all,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals"),
+    assists = colDef(header = "Assists"),
+    points = colDef(header = "Points"),
+    plus_minus = colDef(header = "+/-"),
+    pim = colDef(header = "PIM"),
+    pp_g = colDef(header = "PP G"),
+    pp_a = colDef(header = "PP A"),
+    pp_p = colDef(header = "PP P"),
+    sc_for = colDef(header = "Scoring Chances +"),
+    sc_agst = colDef(header = "Scoring Chances -"),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125),
+    block_shots = colDef(header = "Blocked Shots"),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125),
+    hits = colDef(header = "Hits"),
+    nf_tip = colDef(header = "NF Tip"),
+    nf_screen = colDef(header = "NF Screen"),
+    nf_rebound = colDef(header = "NF Rebound")
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+:::
+
+Per Game:
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary2 <- player_stats |>
+  group_by(player) |>
+  summarise(
+    category = c("Home", "Away", "Regular Season", "All Games"),
+    gp = c(sum(home_away == "Home"
+               & date >= as.Date("2024-10-03")),
+           sum(home_away == "Away"
+               & date >= as.Date("2024-10-03")),
+           sum(date >= as.Date("2024-10-03")),
+           n()),
+    goals = c(sum(goals[home_away == "Home"
+                        & date >= as.Date("2024-10-03")])
+              /sum(home_away == "Home"
+                   & date >= as.Date("2024-10-03")),
+              sum(goals[home_away == "Away"
+                        & date >= as.Date("2024-10-03")])
+              /sum(home_away == "Away"
+                   & date >= as.Date("2024-10-03")),
+              sum(goals[date >= as.Date("2024-10-03")])
+              /sum(date >= as.Date("2024-10-03")),
+              sum(goals)/n()),
+    assists = c(sum(assists[home_away == "Home"
+                            & date >= as.Date("2024-10-03")])
+                /sum(home_away == "Home"
+                     & date >= as.Date("2024-10-03")),
+           sum(assists[home_away == "Away"
+                       & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(assists[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(assists)/n()),
+    points = c(sum(points[home_away == "Home"
+                          & date >= as.Date("2024-10-03")])
+               /sum(home_away == "Home"
+                    & date >= as.Date("2024-10-03")),
+           sum(points[home_away == "Away"
+                      & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(points[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(points)/n()),
+    plus_minus = c(sum(plus_minus[home_away == "Home"
+                                  & date >= as.Date("2024-10-03")])
+                   /sum(home_away == "Home"
+                        & date >= as.Date("2024-10-03")),
+           sum(plus_minus[home_away == "Away"
+                          & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(plus_minus[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(plus_minus)/n()),
+    pim = c(sum(pim[home_away == "Home"
+                    & date >= as.Date("2024-10-03")])
+            /sum(home_away == "Home"
+                 & date >= as.Date("2024-10-03")),
+           sum(pim[home_away == "Away"
+                   & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(pim[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(pim)/n()),
+    pp_g = c(sum(pp_g[home_away == "Home"
+                      & date >= as.Date("2024-10-03")])
+             /sum(home_away == "Home"
+                  & date >= as.Date("2024-10-03")),
+           sum(pp_g[home_away == "Away"
+                    & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(pp_g[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(pp_g)/n()),
+    pp_a = c(sum(pp_a[home_away == "Home"
+                      & date >= as.Date("2024-10-03")])
+             /sum(home_away == "Home"
+                  & date >= as.Date("2024-10-03")),
+           sum(pp_a[home_away == "Away"
+                    & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(pp_a[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(pp_a)/n()),
+    pp_p = c(sum(pp_p[home_away == "Home"
+                      & date >= as.Date("2024-10-03")])
+             /sum(home_away == "Home"
+                  & date >= as.Date("2024-10-03")),
+           sum(pp_p[home_away == "Away"
+                    & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(pp_p[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(pp_p)/n()),
+    sc_for = c(sum(sc_for[home_away == "Home"
+                          & date >= as.Date("2024-10-03")])
+               /sum(home_away == "Home"
+                    & date >= as.Date("2024-10-03")),
+           sum(sc_for[home_away == "Away"
+                      & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(sc_for[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(sc_for)/n()),
+    sc_agst = c(sum(sc_agst[home_away == "Home"
+                            & date >= as.Date("2024-10-03")])
+                /sum(home_away == "Home"
+                     & date >= as.Date("2024-10-03")),
+           sum(sc_agst[home_away == "Away"
+                       & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(sc_agst[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(sc_agst)/n()),
+    scoring_chance = c(sum(scoring_chance[home_away == "Home"
+                                          & date >= as.Date("2024-10-03")])
+                       /sum(home_away == "Home"
+                            & date >= as.Date("2024-10-03")),
+           sum(scoring_chance[home_away == "Away"
+                              & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(scoring_chance[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(scoring_chance)/n()),
+    block_shots = c(sum(block_shots[home_away == "Home"
+                                    & date >= as.Date("2024-10-03")])
+                    /sum(home_away == "Home"
+                         & date >= as.Date("2024-10-03")),
+           sum(block_shots[home_away == "Away"
+                           & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(block_shots[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(block_shots)/n()),
+    takeaways = c(sum(takeaways[home_away == "Home"
+                                & date >= as.Date("2024-10-03")])
+                  /sum(home_away == "Home"
+                       & date >= as.Date("2024-10-03")),
+           sum(takeaways[home_away == "Away"
+                         & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(takeaways[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(takeaways)/n()),
+    hits = c(sum(hits[home_away == "Home"
+                      & date >= as.Date("2024-10-03")])
+             /sum(home_away == "Home"
+                  & date >= as.Date("2024-10-03")),
+           sum(hits[home_away == "Away"
+                    & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(hits[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(hits)/n()),
+    nf_tip = c(sum(nf_tip[home_away == "Home"
+                          & date >= as.Date("2024-10-03")])
+               /sum(home_away == "Home"
+                    & date >= as.Date("2024-10-03")),
+           sum(nf_tip[home_away == "Away"
+                      & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(nf_tip[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(nf_tip)/n()),
+    nf_screen = c(sum(nf_screen[home_away == "Home"
+                                & date >= as.Date("2024-10-03")])
+                  /sum(home_away == "Home"
+                       & date >= as.Date("2024-10-03")),
+           sum(nf_screen[home_away == "Away"
+                         & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(nf_screen[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(nf_screen)/n()),
+    nf_rebound = c(sum(nf_rebound[home_away == "Home"
+                                  & date >= as.Date("2024-10-03")])
+                   /sum(home_away == "Home"
+                        & date >= as.Date("2024-10-03")),
+           sum(nf_rebound[home_away == "Away"
+                          & date >= as.Date("2024-10-03")])
+           /sum(home_away == "Away"
+                & date >= as.Date("2024-10-03")),
+           sum(nf_rebound[date >= as.Date("2024-10-03")])
+           /sum(date >= as.Date("2024-10-03")),
+           sum(nf_rebound)/n()),
+    .groups = "drop"
+  )
+```
+
+::: panel-tabset
+## Home
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary2_home <- player_summary2 |>
+  filter(category == "Home") |>
+  select(-category)
+
+reactable(
+  player_summary2_home,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals", 
+                   format = colFormat(digits = 2)),
+    assists = colDef(header = "Assists",
+                     format = colFormat(digits = 2)),
+    points = colDef(header = "Points",
+                    format = colFormat(digits = 2)),
+    plus_minus = colDef(header = "+/-",
+                        format = colFormat(digits = 2)),
+    pim = colDef(header = "PIM",
+                 format = colFormat(digits = 2)),
+    pp_g = colDef(header = "PP G",
+                  format = colFormat(digits = 2)),
+    pp_a = colDef(header = "PP A",
+                  format = colFormat(digits = 2)),
+    pp_p = colDef(header = "PP P",
+                  format = colFormat(digits = 2)),
+    sc_for = colDef(header = "Scoring Chances +",
+                    format = colFormat(digits = 2)),
+    sc_agst = colDef(header = "Scoring Chances -",
+                     format = colFormat(digits = 2)),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125,
+                            format = colFormat(digits = 2)),
+    block_shots = colDef(header = "Blocked Shots",
+                         format = colFormat(digits = 2)),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125,
+                       format = colFormat(digits = 2)),
+    hits = colDef(header = "Hits",
+                  format = colFormat(digits = 2)),
+    nf_tip = colDef(header = "NF Tip",
+                    format = colFormat(digits = 2)),
+    nf_screen = colDef(header = "NF Screen",
+                       format = colFormat(digits = 2)),
+    nf_rebound = colDef(header = "NF Rebound",
+                        format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Away
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary2_away <- player_summary2 |>
+  filter(category == "Away") |>
+  select(-category)
+
+reactable(
+  player_summary2_away,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals", 
+                   format = colFormat(digits = 2)),
+    assists = colDef(header = "Assists",
+                     format = colFormat(digits = 2)),
+    points = colDef(header = "Points",
+                    format = colFormat(digits = 2)),
+    plus_minus = colDef(header = "+/-",
+                        format = colFormat(digits = 2)),
+    pim = colDef(header = "PIM",
+                 format = colFormat(digits = 2)),
+    pp_g = colDef(header = "PP G",
+                  format = colFormat(digits = 2)),
+    pp_a = colDef(header = "PP A",
+                  format = colFormat(digits = 2)),
+    pp_p = colDef(header = "PP P",
+                  format = colFormat(digits = 2)),
+    sc_for = colDef(header = "Scoring Chances +",
+                    format = colFormat(digits = 2)),
+    sc_agst = colDef(header = "Scoring Chances -",
+                     format = colFormat(digits = 2)),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125,
+                            format = colFormat(digits = 2)),
+    block_shots = colDef(header = "Blocked Shots",
+                         format = colFormat(digits = 2)),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125,
+                       format = colFormat(digits = 2)),
+    hits = colDef(header = "Hits",
+                  format = colFormat(digits = 2)),
+    nf_tip = colDef(header = "NF Tip",
+                    format = colFormat(digits = 2)),
+    nf_screen = colDef(header = "NF Screen",
+                       format = colFormat(digits = 2)),
+    nf_rebound = colDef(header = "NF Rebound",
+                        format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Regular Season
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary2_rs <- player_summary2 |>
+  filter(category == "Regular Season") |>
+  select(-category)
+
+reactable(
+  player_summary2_rs,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals", 
+                   format = colFormat(digits = 2)),
+    assists = colDef(header = "Assists",
+                     format = colFormat(digits = 2)),
+    points = colDef(header = "Points",
+                    format = colFormat(digits = 2)),
+    plus_minus = colDef(header = "+/-",
+                        format = colFormat(digits = 2)),
+    pim = colDef(header = "PIM",
+                 format = colFormat(digits = 2)),
+    pp_g = colDef(header = "PP G",
+                  format = colFormat(digits = 2)),
+    pp_a = colDef(header = "PP A",
+                  format = colFormat(digits = 2)),
+    pp_p = colDef(header = "PP P",
+                  format = colFormat(digits = 2)),
+    sc_for = colDef(header = "Scoring Chances +",
+                    format = colFormat(digits = 2)),
+    sc_agst = colDef(header = "Scoring Chances -",
+                     format = colFormat(digits = 2)),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125,
+                            format = colFormat(digits = 2)),
+    block_shots = colDef(header = "Blocked Shots",
+                         format = colFormat(digits = 2)),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125,
+                       format = colFormat(digits = 2)),
+    hits = colDef(header = "Hits",
+                  format = colFormat(digits = 2)),
+    nf_tip = colDef(header = "NF Tip",
+                    format = colFormat(digits = 2)),
+    nf_screen = colDef(header = "NF Screen",
+                       format = colFormat(digits = 2)),
+    nf_rebound = colDef(header = "NF Rebound",
+                        format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## All Games
+
+```{r}
+#| warning: false
+#| echo: false
+player_summary2_all <- player_summary2 |>
+  filter(category == "All Games") |>
+  select(-category)
+
+reactable(
+  player_summary2_all,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    goals = colDef(header = "Goals", 
+                   format = colFormat(digits = 2)),
+    assists = colDef(header = "Assists",
+                     format = colFormat(digits = 2)),
+    points = colDef(header = "Points",
+                    format = colFormat(digits = 2)),
+    plus_minus = colDef(header = "+/-",
+                        format = colFormat(digits = 2)),
+    pim = colDef(header = "PIM",
+                 format = colFormat(digits = 2)),
+    pp_g = colDef(header = "PP G",
+                  format = colFormat(digits = 2)),
+    pp_a = colDef(header = "PP A",
+                  format = colFormat(digits = 2)),
+    pp_p = colDef(header = "PP P",
+                  format = colFormat(digits = 2)),
+    sc_for = colDef(header = "Scoring Chances +",
+                    format = colFormat(digits = 2)),
+    sc_agst = colDef(header = "Scoring Chances -",
+                     format = colFormat(digits = 2)),
+    scoring_chance = colDef(header = "Scoring Chances +/-",
+                            width = 125,
+                            format = colFormat(digits = 2)),
+    block_shots = colDef(header = "Blocked Shots",
+                         format = colFormat(digits = 2)),
+    takeaways = colDef(header = "Takeaways",
+                       width = 125,
+                       format = colFormat(digits = 2)),
+    hits = colDef(header = "Hits",
+                  format = colFormat(digits = 2)),
+    nf_tip = colDef(header = "NF Tip",
+                    format = colFormat(digits = 2)),
+    nf_screen = colDef(header = "NF Screen",
+                       format = colFormat(digits = 2)),
+    nf_rebound = colDef(header = "NF Rebound",
+                        format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+:::
+
+## Shooting %
+
+Regular season only:
+
+```{r}
+#| warning: false
+#| echo: false
+shooting_stats <- player_stats |>
+  filter(date >= as.Date("2024-10-03")) |>
+  group_by(player) |>
+  summarise(gp = n_distinct(date),
+            tot_goals = sum(goals),
+            tot_shots = sum(shots),
+            tot_shot_att = sum(shot_attempts),
+            shots_game = sum(shots)/n_distinct(date),
+            shot_att_game = sum(shot_attempts)/n_distinct(date),
+            shoot_percentage = tot_goals/tot_shots,
+            shot_on_net_percentage = tot_shots/tot_shot_att) |>
+  ungroup() |>
+  arrange(desc(shots_game)) |>
+  left_join(roster)
+```
+
+::: panel-tabset
+## Forwards
+
+```{r}
+#| warning: false
+#| echo: false
+shooting_stats_f <- shooting_stats |>
+  filter(pos == "F") |>
+  select(-number, -pos)
+
+reactable(
+  shooting_stats_f,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    tot_goals = colDef(header = "Goals"),
+    tot_shots = colDef(header = "Shots on Goal"),
+    tot_shot_att = colDef(header = "Shot Attempts"),
+    shots_game = colDef(header = "Shots / Game",
+                        format = colFormat(digits = 2)),
+    shot_att_game = colDef(header = "Shot Attempts / Game",
+                 format = colFormat(digits = 2)),
+    shoot_percentage = colDef(header = "Shooting %",
+                  format = colFormat(digits = 2)),
+    shot_on_net_percentage = colDef(header = "Shot on Net %",
+                  format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Defensemen
+
+```{r}
+#| warning: false
+#| echo: false
+shooting_stats_d <- shooting_stats |>
+  filter(pos == "D") |>
+  select(-number, -pos)
+
+reactable(
+  shooting_stats_d,
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    gp = colDef(header = "GP"),
+    tot_goals = colDef(header = "Goals"),
+    tot_shots = colDef(header = "Shots on Goal"),
+    tot_shot_att = colDef(header = "Shot Attempts"),
+    shots_game = colDef(header = "Shots / Game",
+                        format = colFormat(digits = 2)),
+    shot_att_game = colDef(header = "Shot Attempts / Game",
+                 format = colFormat(digits = 2)),
+    shoot_percentage = colDef(header = "Shooting %",
+                  format = colFormat(digits = 2)),
+    shot_on_net_percentage = colDef(header = "Shot on Net %",
+                  format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+:::
+
+# Goalie Stats
+
+## Summary
+
+```{r}
+#| warning: false
+#| echo: false
+goalie_stats$month <- format(goalie_stats$date, "%B")
+
+goalie_summary <- goalie_stats |>
+  drop_na(save_percent) |>
+  group_by(player) |>
+  summarise(
+    category = c("September", "October", "November", "December", 
+                 "Home", "Away", "Regular Season", "All Games"),
+    record = c(
+      paste0(sum(month == "September"
+                 & (win == 1 | otw == 1 | sow == 1)), "-",
+          sum(month == "September"
+              & loss == 1), "-",
+          sum(month == "September"
+              & (otl == 1 | sol == 1))),
+      paste0(sum(month == "October"
+                 & (win == 1 | otw == 1 | sow == 1)), "-",
+          sum(month == "October"
+              & loss == 1), "-",
+          sum(month == "October"
+              & (otl == 1 | sol == 1))),
+      paste0(sum(month == "November"
+                 & (win == 1 | otw == 1 | sow == 1)), "-",
+          sum(month == "November"
+              & loss == 1), "-",
+          sum(month == "November"
+              & (otl == 1 | sol == 1))),
+      paste0(sum(month == "December"
+                 & (win == 1 | otw == 1 | sow == 1)), "-",
+          sum(month == "December"
+              & loss == 1), "-",
+          sum(month == "December"
+              & (otl == 1 | sol == 1))),
+      paste0(sum(home_away == "Home"
+                 & (win == 1 | otw == 1 | sow == 1)), "-",
+          sum(home_away == "Home"
+              & loss == 1), "-",
+          sum(home_away == "Home"
+              & (otl == 1 | sol == 1))),
+      paste0(sum(home_away == "Away"
+                 & (win == 1 | otw == 1 | sow == 1)), "-",
+          sum(home_away == "Away"
+              & loss == 1), "-",
+          sum(home_away == "Away"
+              & (otl == 1 | sol == 1))),
+      paste0(sum(date >= as.Date("2024-10-03")
+                 & (win == 1 | otw == 1 | sow == 1)), "-",
+          sum(date >= as.Date("2024-10-03")
+              & loss == 1), "-",
+          sum(date >= as.Date("2024-10-03")
+              & (otl == 1 | sol == 1))),
+      paste0(sum(win == 1 | otw == 1 | sow == 1), "-",
+             sum(loss == 1), "-",
+             sum(otl == 1 | sol == 1))
+    ),
+    avg_save_percentage = c(
+      (sum(shots[month == "September"])
+      -sum(ga[month == "September"]))
+      /sum(shots[month == "September"]),
+      (sum(shots[month == "October"])
+      -sum(ga[month == "October"]))
+      /sum(shots[month == "October"]),
+      (sum(shots[month == "November"])
+      -sum(ga[month == "November"]))
+      /sum(shots[month == "November"]),
+      (sum(shots[month == "December"])
+      -sum(ga[month == "December"]))
+      /sum(shots[month == "December"]),
+      (sum(shots[home_away == "Home"
+                 & date >= as.Date("2024-10-03")])
+      -sum(ga[home_away == "Home"
+              & date >= as.Date("2024-10-03")]))
+      /sum(shots[home_away == "Home"
+                 & date >= as.Date("2024-10-03")]),
+      (sum(shots[home_away == "Away"
+                 & date >= as.Date("2024-10-03")])
+      -sum(ga[home_away == "Away"
+              & date >= as.Date("2024-10-03")]))
+      /sum(shots[home_away == "Away"
+                 & date >= as.Date("2024-10-03")]),
+      (sum(shots[date >= as.Date("2024-10-03")])
+      -sum(ga[date >= as.Date("2024-10-03")]))
+      /sum(shots[date >= as.Date("2024-10-03")]),
+      (sum(shots)-sum(ga))/sum(shots)
+    ),
+    avg_goals_against = c(
+      sum(ga[month == "September"])/sum(month == "September"),
+      sum(ga[month == "October"])/sum(month == "October"),
+      sum(ga[month == "November"])/sum(month == "November"),
+      sum(ga[month == "December"])/sum(month == "December"),
+      sum(ga[home_away == "Home"
+             & date >= as.Date("2024-10-03")])
+      /sum(home_away == "Home"
+           & date >= as.Date("2024-10-03")),
+      sum(ga[home_away == "Away"
+             & date >= as.Date("2024-10-03")])
+      /sum(home_away == "Away"
+           & date >= as.Date("2024-10-03")),
+      sum(ga[date >= as.Date("2024-10-03")])
+      /sum(date >= as.Date("2024-10-03")),
+      sum(ga)/n()
+    ),
+    .groups = "drop"
+  )
+
+goalie_summary |>
+  gt() |>
+  tab_row_group(
+    group = "Daniel Murphy",
+    rows = player == "Daniel Murphy"
+  ) |>
+  tab_row_group(
+    group = "Matt Onuska",
+    rows = player == "Matt Onuska"
+  ) |>
+  cols_hide(columns = c(player)) |>
+  fmt_number(
+    columns = c(avg_save_percentage),
+    decimals = 3
+  ) |>
+  fmt_number(
+    columns = c(avg_goals_against),
+    decimals = 2
+  ) |>
+  cols_label(category = "Category",
+             record = "Record",
+             avg_save_percentage = "Save Percentage",
+             avg_goals_against = "GAA")
+
+```
+
+## Save Percentage
+
+Over the past 4 months (all games), how consistent are they?
+
+```{r}
+#| warning: false
+#| echo: false
+goalie_stats |>
+  left_join(game_id) |>
+  ggplot(aes(x = game_num, y = save_percent, color = player)) +
+  geom_line(aes(group = player)) +
+  labs(x = "Game Number", y = "Save Percentage",
+       color = "Player")
+```
+
+```{r}
+#| warning: false
+#| echo: false
+goalie_stats |>
+  ggplot(aes(x = save_percent, col = player)) +
+  geom_density() +
+  labs(x = "Save Percentage",
+       y = "% of Games",
+       col = "Player")
+```
+
+This shows that Onuska has had higher save percentages and been more consistent through the first half.
+
+## Rebound Control
+
+Relationship between save percentage and rebound control across all games.
+
+```{r}
+#| warning: false
+#| echo: false
+goalie_stats |>
+  drop_na(save_percent) |>
+  mutate(rebound_percent = rebounds / shots) |>
+  select(player, date, save_percent, rebound_percent) |>
+  ggplot(aes(x = rebound_percent, y = save_percent, 
+             color = player)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Rebound Percentage", y = "Save Percentage",
+       color = "Player")
+```
+
+This shows that Murphy's save percentage tends to be lower when he gives up a lot of rebounds and Onuska's save percentage tends to be higher when he gives up a lot of rebounds.
+
+# InStat
+
+Per Game (regular season only):
+
+```{r}
+#| warning: false
+#| echo: false
+
+instat <- read_xlsx("/Users/hudsonholman/Documents/Work/Varsity Analytics/2024-25 Mens Hockey/data files/instat_pull_2024_12.xlsx")
+
+instat[instat == "-"] <- NA
+instat$Faceoffs <- as.numeric(instat$Faceoffs)
+instat$`Faceoffs won, %` <- as.numeric(gsub("%", "",
+                                            instat$`Faceoffs won, %`))
+instat$`Faceoffs in DZ` <- as.numeric(instat$`Faceoffs in DZ`)
+instat$`Faceoffs won in DZ, %` <- as.numeric(gsub("%", "",
+                                            instat$`Faceoffs won in DZ, %`))
+instat$`Faceoffs in NZ` <- as.numeric(instat$`Faceoffs in NZ`)
+instat$`Faceoffs won in NZ, %` <- as.numeric(gsub("%", "",
+                                            instat$`Faceoffs won in NZ, %`))
+instat$`Faceoffs in OZ` <- as.numeric(instat$`Faceoffs in OZ`)
+instat$`Faceoffs won in OZ, %` <- as.numeric(gsub("%", "",
+                                            instat$`Faceoffs won in OZ, %`))
+instat$`Hits against` <- as.numeric(instat$`Hits against`)
+instat$`Dump outs` <- as.numeric(instat$`Dump outs`)
+instat$`CORSI for, %` <- as.numeric(gsub("%", "",
+                                            instat$`CORSI for, %`))
+instat$`Accurate passes, %` <- as.numeric(gsub("%", "",
+                                            instat$`Accurate passes, %`))
+instat$`Entries` <- as.numeric(instat$`Entries`)
+instat$`Entries via pass` <- as.numeric(instat$`Entries via pass`)
+instat$`Entries via dump in` <- as.numeric(instat$`Entries via dump in`)
+instat$`Entries via stickhandling` <- as.numeric(instat$`Entries via stickhandling`)
+instat$`Breakouts via dump out` <- as.numeric(instat$`Breakouts via dump out`)
+instat$`Breakouts via stickhandling` <- as.numeric(instat$`Breakouts via stickhandling`)
+
+```
+
+::: panel-tabset
+## Forwards
+
+```{r}
+#| warning: false
+#| echo: false
+instat_f <- instat |>
+  filter(Position == "F") |>
+  select(`Player`, `Time on ice`, `Games played`, `All shifts`,
+         `Penalties drawn`, `Penalty time`, `Faceoffs`, 
+         `Faceoffs won, %`, `Faceoffs in DZ`, 
+         `Faceoffs won in DZ, %`, `Faceoffs in NZ`, 
+         `Faceoffs won in NZ, %`, `Faceoffs in OZ`, 
+         `Faceoffs won in OZ, %`, `Hits against`, 
+         `Dump ins`, `Dump outs`, `CORSI for, %`, 
+         `Passes`, `Accurate passes, %`, `Takeaways`,
+         `Puck losses`, `Entries`, `Entries via pass`,
+         `Entries via dump in`, `Entries via stickhandling`,
+         `Breakouts`, `Breakouts via pass`, 
+         `Breakouts via dump out`, `Breakouts via stickhandling`)
+
+reactable(
+  instat_f,
+  columns = list(
+    `Player` = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    `Games played` = colDef(header = "GP"),
+    `Time on ice` = colDef(header = "Time on Ice"),
+    `All shifts` = colDef(header = "Shifts"),
+    `Penalty time` = colDef(header = "PIM"),
+    `Penalties drawn` = colDef(header = "Penalties Drawn"),
+    `Faceoffs` = colDef(header = "Faceoffs"),
+    `Faceoffs won, %` = colDef(header = "Faceoffs Win %"),
+    `Faceoffs in DZ` = colDef(header = "DZ Faceoffs"),
+    `Faceoffs won in DZ, %` = colDef(header = "DZ Faceoffs Win %"),
+    `Faceoffs in NZ` = colDef(header = "NZ Faceoffs"),
+    `Faceoffs won in NZ, %` = colDef(header = "NZ Faceoffs Win %"),
+    `Faceoffs in OZ` = colDef(header = "OZ Faceoffs"),
+    `Faceoffs won in OZ, %` = colDef(header = "OZ Faceoffs Win %"),
+    `Hits against` = colDef(header = "Hits Taken"),
+    `Dump ins` = colDef(header = "Dump Ins"),
+    `Dump outs` = colDef(header = "Dump Outs"),
+    `CORSI for, %` = colDef(header = "CORSI For %"),
+    `Passes` = colDef(header = "Passes"),
+    `Accurate passes, %` = colDef(header = "Accurate Pass %"),
+    `Takeaways` = colDef(header = "Takeaways"),
+    `Puck losses` = colDef(header = "Giveaways"),
+    `Entries` = colDef(header = "Zone Entries"),
+    `Entries via pass` = colDef(header = "Zone Entries - Pass"),
+    `Entries via dump in` = colDef(header = "Zone Entries - Dump"),
+    `Entries via stickhandling` = colDef(header = "Zone Entries - Carry"),
+    `Breakouts` = colDef(header = "Zone Exits"),
+    `Breakouts via pass` = colDef(header = "Zone Exits - Pass"),
+    `Breakouts via dump out` = colDef(header = "Zone Exits - Dump"),
+    `Breakouts via stickhandling` = colDef(header = "Zone Exits - Carry")
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Defensemen
+
+```{r}
+#| warning: false
+#| echo: false
+instat_d <- instat |>
+  filter(Position == "D") |>
+  select(`Player`, `Time on ice`, `Games played`, `All shifts`,
+         `Penalties drawn`, `Penalty time`, `Faceoffs`, 
+         `Faceoffs won, %`, `Faceoffs in DZ`, 
+         `Faceoffs won in DZ, %`, `Faceoffs in NZ`, 
+         `Faceoffs won in NZ, %`, `Faceoffs in OZ`, 
+         `Faceoffs won in OZ, %`, `Hits against`, 
+         `Dump ins`, `Dump outs`, `CORSI for, %`, 
+         `Passes`, `Accurate passes, %`, `Takeaways`,
+         `Puck losses`, `Entries`, `Entries via pass`,
+         `Entries via dump in`, `Entries via stickhandling`,
+         `Breakouts`, `Breakouts via pass`, 
+         `Breakouts via dump out`, `Breakouts via stickhandling`)
+
+reactable(
+  instat_d,
+  columns = list(
+    `Player` = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 200
+    ),
+    `Games played` = colDef(header = "GP"),
+    `Time on ice` = colDef(header = "Time on Ice"),
+    `All shifts` = colDef(header = "Shifts"),
+    `Penalty time` = colDef(header = "PIM"),
+    `Penalties drawn` = colDef(header = "Penalties Drawn"),
+    `Faceoffs` = colDef(header = "Faceoffs"),
+    `Faceoffs won, %` = colDef(header = "Faceoffs Win %"),
+    `Faceoffs in DZ` = colDef(header = "DZ Faceoffs"),
+    `Faceoffs won in DZ, %` = colDef(header = "DZ Faceoffs Win %"),
+    `Faceoffs in NZ` = colDef(header = "NZ Faceoffs"),
+    `Faceoffs won in NZ, %` = colDef(header = "NZ Faceoffs Win %"),
+    `Faceoffs in OZ` = colDef(header = "OZ Faceoffs"),
+    `Faceoffs won in OZ, %` = colDef(header = "OZ Faceoffs Win %"),
+    `Hits against` = colDef(header = "Hits Taken"),
+    `Dump ins` = colDef(header = "Dump Ins"),
+    `Dump outs` = colDef(header = "Dump Outs"),
+    `CORSI for, %` = colDef(header = "CORSI For %"),
+    `Passes` = colDef(header = "Passes"),
+    `Accurate passes, %` = colDef(header = "Accurate Pass %"),
+    `Takeaways` = colDef(header = "Takeaways"),
+    `Puck losses` = colDef(header = "Giveaways"),
+    `Entries` = colDef(header = "Zone Entries"),
+    `Entries via pass` = colDef(header = "Zone Entries - Pass"),
+    `Entries via dump in` = colDef(header = "Zone Entries - Dump"),
+    `Entries via stickhandling` = colDef(header = "Zone Entries - Carry"),
+    `Breakouts` = colDef(header = "Zone Exits"),
+    `Breakouts via pass` = colDef(header = "Zone Exits - Pass"),
+    `Breakouts via dump out` = colDef(header = "Zone Exits - Dump"),
+    `Breakouts via stickhandling` = colDef(header = "Zone Exits - Carry")
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+\`\`\`
+:::
