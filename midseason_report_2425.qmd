@@ -416,17 +416,19 @@ reactable(
 
 Some insights:
 
+-   Scoring is significantly better at home. No difference in goals against for home and away.
+
 -   2nd period is most productive for goals and shots.
 
--   Give up most shots in the 1st, but most goals in the 3rd.
+-   Give up most shots in the 1st, but least goals. 3rd period is where we give up the most goals.
 
--   PP % high at home in the 3rd period.
+-   PP % high and PK % low at home in the 3rd period.
 
 -   Losing net front, odd man, and grade As on average.
 
 ## Net Front
 
-Relationship between winning and our net front
+Net front for and against are higher for wins.
 
 ```{r}
 #| warning: false
@@ -491,7 +493,7 @@ team_stats |>
 
 ## Odd Man
 
-Relationship between winning and odd man
+Odd man rushes for are higher for wins. 
 
 ```{r}
 #| warning: false
@@ -556,7 +558,7 @@ team_stats |>
 
 ## Grade As
 
-Relationship between winning and grade A chances.
+Grade A chances for are higher for wins.
 
 ```{r}
 #| warning: false
@@ -619,6 +621,8 @@ team_stats |>
        y = "Grade A -",
        col = "Result")
 ```
+
+**This is positive news - it shows that net front, odd man rushes, and grade A chances are three stats that influence team success and are worth tracking.**
 
 ## Win/Loss Breakdown
 
@@ -695,7 +699,7 @@ shots_breakdown |>
              gr_a_for = "Grade A +",
              gr_a_agst = "Grade A -")
 ```
-
+\
 ```{r}
 #| warning: false
 #| echo: false
@@ -777,6 +781,15 @@ shots_breakdown2 |>
              gr_a_agst = "Grade A -")
 ```
 
+Key insights:
+
+-   Powerplay is much better for wins. In losses by 2+, almost 15% lower. 
+
+-   Net front, odd man, and grade As for are all higher for wins.
+
+-   Losses by 1 have fewer grade As for than during wins.
+
+-   Losses by 2+ have more net front against than during losses by 1.
 
 # Player Stats
 
@@ -864,41 +877,56 @@ player_summary1 <- player_stats |>
            sum(scoring_chance[date >= as.Date("2024-10-03")]),
            sum(scoring_chance)),
     block_shots = c(sum(block_shots[home_away == "Home"
-                                    & date >= as.Date("2024-10-03")]),
+                                    & date >= as.Date("2024-10-03")], na.rm = TRUE),
            sum(block_shots[home_away == "Away"
-                           & date >= as.Date("2024-10-03")]),
-           sum(block_shots[date >= as.Date("2024-10-03")]),
-           sum(block_shots)),
+                           & date >= as.Date("2024-10-03")], na.rm = TRUE),
+           sum(block_shots[date >= as.Date("2024-10-03")], na.rm = TRUE),
+           sum(block_shots, na.rm = TRUE)),
     takeaways = c(sum(takeaways[home_away == "Home"
-                                & date >= as.Date("2024-10-03")]),
+                                & date >= as.Date("2024-10-03")],
+                      na.rm = TRUE),
            sum(takeaways[home_away == "Away"
-                         & date >= as.Date("2024-10-03")]),
-           sum(takeaways[date >= as.Date("2024-10-03")]),
-           sum(takeaways)),
+                         & date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(takeaways[date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(takeaways, na.rm = TRUE)),
     hits = c(sum(hits[home_away == "Home"
-                      & date >= as.Date("2024-10-03")]),
+                      & date >= as.Date("2024-10-03")],
+                 na.rm = TRUE),
            sum(hits[home_away == "Away"
-                    & date >= as.Date("2024-10-03")]),
-           sum(hits[date >= as.Date("2024-10-03")]),
-           sum(hits)),
+                    & date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(hits[date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(hits, na.rm = TRUE)),
     nf_tip = c(sum(nf_tip[home_away == "Home"
-                          & date >= as.Date("2024-10-03")]),
+                          & date >= as.Date("2024-10-03")],
+                   na.rm = TRUE),
            sum(nf_tip[home_away == "Away"
-                      & date >= as.Date("2024-10-03")]),
-           sum(nf_tip[date >= as.Date("2024-10-03")]),
-           sum(nf_tip)),
+                      & date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(nf_tip[date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(nf_tip, na.rm = TRUE)),
     nf_screen = c(sum(nf_screen[home_away == "Home"
-                                & date >= as.Date("2024-10-03")]),
+                                & date >= as.Date("2024-10-03")],
+                      na.rm = TRUE),
            sum(nf_screen[home_away == "Away"
-                         & date >= as.Date("2024-10-03")]),
-           sum(nf_screen[date >= as.Date("2024-10-03")]),
-           sum(nf_screen)),
+                         & date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(nf_screen[date >= as.Date("2024-10-03")], 
+               na.rm = TRUE),
+           sum(nf_screen, na.rm = TRUE)),
     nf_rebound = c(sum(nf_rebound[home_away == "Home"
-                                  & date >= as.Date("2024-10-03")]),
+                                  & date >= as.Date("2024-10-03")],
+                       na.rm = TRUE),
            sum(nf_rebound[home_away == "Away"
-                          & date >= as.Date("2024-10-03")]),
-           sum(nf_rebound[date >= as.Date("2024-10-03")]),
-           sum(nf_rebound)),
+                          & date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(nf_rebound[date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           sum(nf_rebound, na.rm = TRUE)),
     .groups = "drop"
   )
 ```
@@ -1100,193 +1128,124 @@ player_summary2 <- player_stats |>
                & date >= as.Date("2024-10-03")),
            sum(date >= as.Date("2024-10-03")),
            n()),
-    goals = c(sum(goals[home_away == "Home"
-                        & date >= as.Date("2024-10-03")])
-              /sum(home_away == "Home"
-                   & date >= as.Date("2024-10-03")),
-              sum(goals[home_away == "Away"
-                        & date >= as.Date("2024-10-03")])
-              /sum(home_away == "Away"
-                   & date >= as.Date("2024-10-03")),
-              sum(goals[date >= as.Date("2024-10-03")])
-              /sum(date >= as.Date("2024-10-03")),
-              sum(goals)/n()),
-    assists = c(sum(assists[home_away == "Home"
-                            & date >= as.Date("2024-10-03")])
-                /sum(home_away == "Home"
-                     & date >= as.Date("2024-10-03")),
-           sum(assists[home_away == "Away"
-                       & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(assists[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(assists)/n()),
-    points = c(sum(points[home_away == "Home"
-                          & date >= as.Date("2024-10-03")])
-               /sum(home_away == "Home"
-                    & date >= as.Date("2024-10-03")),
-           sum(points[home_away == "Away"
-                      & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(points[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(points)/n()),
-    plus_minus = c(sum(plus_minus[home_away == "Home"
-                                  & date >= as.Date("2024-10-03")])
-                   /sum(home_away == "Home"
-                        & date >= as.Date("2024-10-03")),
-           sum(plus_minus[home_away == "Away"
-                          & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(plus_minus[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(plus_minus)/n()),
-    pim = c(sum(pim[home_away == "Home"
-                    & date >= as.Date("2024-10-03")])
-            /sum(home_away == "Home"
-                 & date >= as.Date("2024-10-03")),
-           sum(pim[home_away == "Away"
-                   & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(pim[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(pim)/n()),
-    pp_g = c(sum(pp_g[home_away == "Home"
-                      & date >= as.Date("2024-10-03")])
-             /sum(home_away == "Home"
-                  & date >= as.Date("2024-10-03")),
-           sum(pp_g[home_away == "Away"
-                    & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(pp_g[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(pp_g)/n()),
-    pp_a = c(sum(pp_a[home_away == "Home"
-                      & date >= as.Date("2024-10-03")])
-             /sum(home_away == "Home"
-                  & date >= as.Date("2024-10-03")),
-           sum(pp_a[home_away == "Away"
-                    & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(pp_a[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(pp_a)/n()),
-    pp_p = c(sum(pp_p[home_away == "Home"
-                      & date >= as.Date("2024-10-03")])
-             /sum(home_away == "Home"
-                  & date >= as.Date("2024-10-03")),
-           sum(pp_p[home_away == "Away"
-                    & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(pp_p[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(pp_p)/n()),
-    sc_for = c(sum(sc_for[home_away == "Home"
-                          & date >= as.Date("2024-10-03")])
-               /sum(home_away == "Home"
-                    & date >= as.Date("2024-10-03")),
-           sum(sc_for[home_away == "Away"
-                      & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(sc_for[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(sc_for)/n()),
-    sc_agst = c(sum(sc_agst[home_away == "Home"
-                            & date >= as.Date("2024-10-03")])
-                /sum(home_away == "Home"
-                     & date >= as.Date("2024-10-03")),
-           sum(sc_agst[home_away == "Away"
-                       & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(sc_agst[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(sc_agst)/n()),
-    scoring_chance = c(sum(scoring_chance[home_away == "Home"
-                                          & date >= as.Date("2024-10-03")])
-                       /sum(home_away == "Home"
-                            & date >= as.Date("2024-10-03")),
-           sum(scoring_chance[home_away == "Away"
-                              & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(scoring_chance[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(scoring_chance)/n()),
-    block_shots = c(sum(block_shots[home_away == "Home"
-                                    & date >= as.Date("2024-10-03")])
-                    /sum(home_away == "Home"
-                         & date >= as.Date("2024-10-03")),
-           sum(block_shots[home_away == "Away"
-                           & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(block_shots[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(block_shots)/n()),
-    takeaways = c(sum(takeaways[home_away == "Home"
-                                & date >= as.Date("2024-10-03")])
-                  /sum(home_away == "Home"
-                       & date >= as.Date("2024-10-03")),
-           sum(takeaways[home_away == "Away"
-                         & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(takeaways[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(takeaways)/n()),
-    hits = c(sum(hits[home_away == "Home"
-                      & date >= as.Date("2024-10-03")])
-             /sum(home_away == "Home"
-                  & date >= as.Date("2024-10-03")),
-           sum(hits[home_away == "Away"
-                    & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(hits[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(hits)/n()),
-    nf_tip = c(sum(nf_tip[home_away == "Home"
-                          & date >= as.Date("2024-10-03")])
-               /sum(home_away == "Home"
-                    & date >= as.Date("2024-10-03")),
-           sum(nf_tip[home_away == "Away"
-                      & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(nf_tip[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(nf_tip)/n()),
-    nf_screen = c(sum(nf_screen[home_away == "Home"
-                                & date >= as.Date("2024-10-03")])
-                  /sum(home_away == "Home"
-                       & date >= as.Date("2024-10-03")),
-           sum(nf_screen[home_away == "Away"
-                         & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(nf_screen[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(nf_screen)/n()),
-    nf_rebound = c(sum(nf_rebound[home_away == "Home"
-                                  & date >= as.Date("2024-10-03")])
-                   /sum(home_away == "Home"
-                        & date >= as.Date("2024-10-03")),
-           sum(nf_rebound[home_away == "Away"
-                          & date >= as.Date("2024-10-03")])
-           /sum(home_away == "Away"
-                & date >= as.Date("2024-10-03")),
-           sum(nf_rebound[date >= as.Date("2024-10-03")])
-           /sum(date >= as.Date("2024-10-03")),
-           sum(nf_rebound)/n()),
+    goals = c(mean(goals[home_away == "Home"
+                        & date >= as.Date("2024-10-03")]),
+              mean(goals[home_away == "Away"
+                        & date >= as.Date("2024-10-03")]),
+              mean(goals[date >= as.Date("2024-10-03")]),
+              mean(goals)),
+    assists = c(mean(assists[home_away == "Home"
+                            & date >= as.Date("2024-10-03")]),
+           mean(assists[home_away == "Away"
+                       & date >= as.Date("2024-10-03")]),
+           mean(assists[date >= as.Date("2024-10-03")]),
+           mean(assists)),
+    points = c(mean(points[home_away == "Home"
+                          & date >= as.Date("2024-10-03")]),
+           mean(points[home_away == "Away"
+                      & date >= as.Date("2024-10-03")]),
+           mean(points[date >= as.Date("2024-10-03")]),
+           mean(points)),
+    plus_minus = c(mean(plus_minus[home_away == "Home"
+                                  & date >= as.Date("2024-10-03")]),
+           mean(plus_minus[home_away == "Away"
+                          & date >= as.Date("2024-10-03")]),
+           mean(plus_minus[date >= as.Date("2024-10-03")]),
+           mean(plus_minus)),
+    pim = c(mean(pim[home_away == "Home"
+                    & date >= as.Date("2024-10-03")]),
+           mean(pim[home_away == "Away"
+                   & date >= as.Date("2024-10-03")]),
+           mean(pim[date >= as.Date("2024-10-03")]),
+           mean(pim)),
+    pp_g = c(mean(pp_g[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           mean(pp_g[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           mean(pp_g[date >= as.Date("2024-10-03")]),
+           mean(pp_g)),
+    pp_a = c(mean(pp_a[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           mean(pp_a[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           mean(pp_a[date >= as.Date("2024-10-03")]),
+           mean(pp_a)),
+    pp_p = c(mean(pp_p[home_away == "Home"
+                      & date >= as.Date("2024-10-03")]),
+           mean(pp_p[home_away == "Away"
+                    & date >= as.Date("2024-10-03")]),
+           mean(pp_p[date >= as.Date("2024-10-03")]),
+           mean(pp_p)),
+    sc_for = c(mean(sc_for[home_away == "Home"
+                          & date >= as.Date("2024-10-03")]),
+           mean(sc_for[home_away == "Away"
+                      & date >= as.Date("2024-10-03")]),
+           mean(sc_for[date >= as.Date("2024-10-03")]),
+           mean(sc_for)),
+    sc_agst = c(mean(sc_agst[home_away == "Home"
+                            & date >= as.Date("2024-10-03")]),
+           mean(sc_agst[home_away == "Away"
+                       & date >= as.Date("2024-10-03")]),
+           mean(sc_agst[date >= as.Date("2024-10-03")]),
+           mean(sc_agst)),
+    scoring_chance = c(mean(scoring_chance[home_away == "Home"
+                                          & date >= as.Date("2024-10-03")]),
+           mean(scoring_chance[home_away == "Away"
+                              & date >= as.Date("2024-10-03")]),
+           mean(scoring_chance[date >= as.Date("2024-10-03")]),
+           mean(scoring_chance)),
+    block_shots = c(mean(block_shots[home_away == "Home"
+                                    & date >= as.Date("2024-10-03")], na.rm = TRUE),
+           mean(block_shots[home_away == "Away"
+                           & date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           mean(block_shots[date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           mean(block_shots, na.rm = TRUE)),
+    takeaways = c(mean(takeaways[home_away == "Home"
+                                & date >= as.Date("2024-10-03")],
+                       na.rm = TRUE),
+           mean(takeaways[home_away == "Away"
+                         & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(takeaways[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(takeaways, na.rm = TRUE)),
+    hits = c(mean(hits[home_away == "Home"
+                      & date >= as.Date("2024-10-03")],
+                  na.rm = TRUE),
+           mean(hits[home_away == "Away"
+                    & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(hits[date >= as.Date("2024-10-03")],
+               na.rm = TRUE),
+           mean(hits, na.rm = TRUE)),
+    nf_tip = c(mean(nf_tip[home_away == "Home"
+                          & date >= as.Date("2024-10-03")],
+                    na.rm = TRUE),
+           mean(nf_tip[home_away == "Away"
+                      & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(nf_tip[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(nf_tip, na.rm = TRUE)),
+    nf_screen = c(mean(nf_screen[home_away == "Home"
+                                & date >= as.Date("2024-10-03")],
+                       na.rm = TRUE),
+           mean(nf_screen[home_away == "Away"
+                         & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(nf_screen[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(nf_screen, na.rm = TRUE)),
+    nf_rebound = c(mean(nf_rebound[home_away == "Home"
+                                  & date >= as.Date("2024-10-03")], na.rm = TRUE),
+           mean(nf_rebound[home_away == "Away"
+                          & date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(nf_rebound[date >= as.Date("2024-10-03")],
+                na.rm = TRUE),
+           mean(nf_rebound, na.rm = TRUE)),
     .groups = "drop"
   )
 ```
@@ -1541,6 +1500,14 @@ reactable(
 ```
 :::
 
+Some insights:
+
+-   Monette stands out a bit -> High shooting % (see below), plus/minus and takeaways per game.
+
+-   Pierce, Popple, Bierd leading scoring chance +/- per game.
+
+-   Fedak and Fraser high in net front tips and screens. Pierce high for net front rebounds. 
+
 ## Shooting %
 
 Regular season only:
@@ -1555,8 +1522,8 @@ shooting_stats <- player_stats |>
             tot_goals = sum(goals),
             tot_shots = sum(shots),
             tot_shot_att = sum(shot_attempts),
-            shots_game = sum(shots)/n_distinct(date),
-            shot_att_game = sum(shot_attempts)/n_distinct(date),
+            shots_game = mean(shots),
+            shot_att_game = mean(shot_attempts),
             shoot_percentage = tot_goals/tot_shots,
             shot_on_net_percentage = tot_shots/tot_shot_att) |>
   ungroup() |>
@@ -1639,6 +1606,10 @@ reactable(
 )
 ```
 :::
+
+Some insights:
+
+-   Fedak has high shooting percentage and high shot on net percentage. 
 
 # Goalie Stats
 
@@ -1733,21 +1704,21 @@ goalie_summary <- goalie_stats |>
       (sum(shots)-sum(ga))/sum(shots)
     ),
     avg_goals_against = c(
-      sum(ga[month == "September"])/sum(month == "September"),
-      sum(ga[month == "October"])/sum(month == "October"),
-      sum(ga[month == "November"])/sum(month == "November"),
-      sum(ga[month == "December"])/sum(month == "December"),
+      sum(ga[month == "September"])/sum(minutes[month == "September"])*60,
+      sum(ga[month == "October"])/sum(minutes[month == "October"])*60,
+      sum(ga[month == "November"])/sum(minutes[month == "November"])*60,
+      sum(ga[month == "December"])/sum(minutes[month == "December"])*60,
       sum(ga[home_away == "Home"
              & date >= as.Date("2024-10-03")])
-      /sum(home_away == "Home"
-           & date >= as.Date("2024-10-03")),
+      /sum(minutes[home_away == "Home"
+           & date >= as.Date("2024-10-03")])*60,
       sum(ga[home_away == "Away"
              & date >= as.Date("2024-10-03")])
-      /sum(home_away == "Away"
-           & date >= as.Date("2024-10-03")),
+      /sum(minutes[home_away == "Away"
+           & date >= as.Date("2024-10-03")])*60,
       sum(ga[date >= as.Date("2024-10-03")])
-      /sum(date >= as.Date("2024-10-03")),
-      sum(ga)/n()
+      /sum(minutes[date >= as.Date("2024-10-03")])*60,
+      sum(ga)/sum(minutes)*60
     ),
     .groups = "drop"
   )
@@ -1780,7 +1751,7 @@ goalie_summary |>
 
 ## Save Percentage
 
-Over the past 4 months (all games), how consistent are they?
+This looks at the consistency of our goalies. 
 
 ```{r}
 #| warning: false
@@ -1804,11 +1775,13 @@ goalie_stats |>
        col = "Player")
 ```
 
-This shows that Onuska has had higher save percentages and been more consistent through the first half.
+Some insights:
+
+-   Onuska has been stronger through the first half. However, over his previous 3 games, Murphy's save percentage has been rising. 
+
+-   The second figure shows that Murphy is more likely to have a bad game or an excellent game. Onuska is more consistent, more likely to have a good game. 
 
 ## Rebound Control
-
-Relationship between save percentage and rebound control across all games.
 
 ```{r}
 #| warning: false
@@ -1825,7 +1798,9 @@ goalie_stats |>
        color = "Player")
 ```
 
-This shows that Murphy's save percentage tends to be lower when he gives up a lot of rebounds and Onuska's save percentage tends to be higher when he gives up a lot of rebounds.
+-   Murphy's save percentage tends to be lower when he gives up a lot of rebounds. 
+
+-   Onuska's save percentage tends to be higher when he gives up a lot of rebounds.
 
 # InStat
 
@@ -1835,9 +1810,14 @@ Per Game (regular season only):
 #| warning: false
 #| echo: false
 
-instat <- read_xlsx("/Users/hudsonholman/Documents/Work/Varsity Analytics/2024-25 Mens Hockey/data files/instat_pull_2024_12.xlsx")
+instat <- read_xlsx("data files/instat_pull_2024_12.xlsx")
 
 instat[instat == "-"] <- NA
+
+instat <- instat |>
+  mutate(Position = if_else(Player == "Owen Wilson",
+                            "D", Position))
+
 instat$Faceoffs <- as.numeric(instat$Faceoffs)
 instat$`Faceoffs won, %` <- as.numeric(gsub("%", "",
                                             instat$`Faceoffs won, %`))
@@ -1996,5 +1976,16 @@ reactable(
 )
 ```
 
-\`\`\`
 :::
+
+Some insights:
+
+-   Popple draws the most penalties, also most hits taken.
+
+-   Faceoff win % leaders for regular centres:
+    -   Total: Grein, Bierd, Fedak, Popple, Goldie
+    -   DZ: Grein, Bierd, Fedak, Popple, Goldie
+    -   NZ: Grein, Fedak, Bierd, Monette, Goldie
+    -   OZ: Popple, Bierd, Fedak
+
+-   Santia has the most dump-ins and dump-outs among forwards.
