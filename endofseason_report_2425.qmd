@@ -1,0 +1,1012 @@
+---
+title: "Waterloo Warriors MHKY 2024-25 - End of Season Report"
+format:
+  html:
+    toc: true
+    page-layout: full
+---
+
+```{r}
+#| include: false
+library(tidyverse) # Data tidying and pipe
+library(gt) # Creating tables
+library(lubridate) # Working with dates
+library(readr) # Importing data
+library(readxl) # Importing excel
+library(reactable) # Interactive tables
+```
+
+```{r}
+#| include: false
+player_stats <- read_excel("data files/instat_players.xlsx")
+goalie_stats <- read_excel("data files/instat_goalies.xlsx")
+team_stats <- read_excel("data files/instat_team.xlsx")
+```
+
+```{r}
+#| include: false
+
+# Function to convert time of ice to decimal minutes:
+convert_to_minutes <- function(time_str) {
+  # Split the string into hours and minutes
+  time_parts <- strsplit(time_str, ":")
+  
+  # Convert hours and minutes to numeric and calculate total minutes
+  minutes <- sapply(time_parts, function(x) as.numeric(x[1]) + as.numeric(x[2]) / 60)
+  
+  return(minutes)
+}
+```
+
+```{r}
+#| include: false
+
+# Some manipulations, esp to ice time
+team_stats$oz_time <- convert_to_minutes(team_stats$oz_time)
+team_stats$dz_time <- convert_to_minutes(team_stats$dz_time)
+team_stats <- team_stats |>
+  mutate(result = if_else(gf > ga, "W", "L"))
+
+player_stats$pp_time <- convert_to_minutes(player_stats$pp_time)
+player_stats$sh_time <- convert_to_minutes(player_stats$sh_time)
+player_stats$toi <- convert_to_minutes(player_stats$toi)
+player_stats <- player_stats |>
+  mutate(toi_per_gp = toi / gp)
+
+goalie_stats$toi <- convert_to_minutes(goalie_stats$toi)
+```
+
+Note: All data in this report is sourced from InStat. With that comes ambiguity about the definition of certain stats.
+
+# Team Stats
+
+::: panel-tabset
+## Possession
+
+```{r}
+#| echo: false
+# Shooting/scoring/possession
+team_possession <- team_stats |>
+  group_by(result) |>
+  summarize(gp = n(),
+            gf = mean(gf),
+            ga = mean(ga),
+            shot_attempts = mean(shot_attempts),
+            sog = mean(sog),
+            corsi_percent = mean(corsi_percent),
+            xG_per_shot = mean(xG_per_shot),
+            opp_xG_per_shot = mean(opp_xG_per_shot),
+            xG = mean(xG),
+            opp_xG = mean(opp_xG),
+            oz_time = mean(oz_time),
+            dz_time = mean(dz_time))
+
+reactable(
+  team_possession,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    result = colDef(sticky = "left", header = ""),
+    gp = colDef(header = "GP"),
+    gf = colDef(header = "Goals For",
+                format = colFormat(digits = 2)),
+    ga = colDef(header = "Goals Against",
+                format = colFormat(digits = 2)),
+    shot_attempts = colDef(header = "Shot Attempts",
+                format = colFormat(digits = 2)),
+    sog = colDef(header = "Shots on Goal",
+                format = colFormat(digits = 2)),
+    corsi_percent = colDef(header = "Corsi %",
+                format = colFormat(digits = 2)),
+    xG_per_shot = colDef(header = "xG/Shot",
+                format = colFormat(digits = 2)),
+    opp_xG_per_shot = colDef(header = "Opp xG/Shot",
+                format = colFormat(digits = 2)),
+    xG = colDef(header = "xG",
+                format = colFormat(digits = 2)),
+    opp_xG = colDef(header = "Opp xG",
+                format = colFormat(digits = 2)),
+    oz_time = colDef(header = "OZ Time",
+                format = colFormat(digits = 2)),
+    dz_time = colDef(header = "DZ Time",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Special Teams
+```{r}
+#| echo: false
+team_specialteams <- team_stats |>
+  group_by(result) |>
+  summarize(penalties_for = mean(penalties_for),
+            penalties_agst = mean(penalties_agst),
+            penalties_for_time = mean(penalties_for_time),
+            pp = sum(pp),
+            pp_g = sum(pp_g),
+            pp_per = pp_g / pp,
+            pk = sum(pk),
+            pk_kill = sum(pk_kill),
+            pk_per = pk_kill / pk)
+
+reactable(
+  team_specialteams,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    result = colDef(sticky = "left", header = ""),
+    penalties_for = colDef(header = "Penalties For",
+                           format = colFormat(digits = 2)),
+    penalties_agst = colDef(header = "Penalties Against",
+                format = colFormat(digits = 2)),
+    penalties_for_time = colDef(header = "PIM",
+                format = colFormat(digits = 2)),
+    pp = colDef(header = "PP"),
+    pp_g = colDef(header = "PP Goals"),
+    pp_per = colDef(header = "PP %",
+                format = colFormat(digits = 2)),
+    pk = colDef(header = "PK"),
+    pk_kill = colDef(header = "PK Kills"),
+    pk_per = colDef(header = "PK %",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Faceoffs
+```{r}
+#| echo: false
+team_faceoffs <- team_stats |>
+  group_by(result) |>
+  summarize(fo = sum(fo),
+            fo_won = sum(fo_won),
+            fo_per = fo_won / fo,
+            dz_fo = sum(dz_fo),
+            dz_fo_win = sum(dz_fo_win),
+            dz_fo_per = dz_fo_win / dz_fo,
+            nz_fo = sum(nz_fo),
+            nz_fo_win = sum(nz_fo_win),
+            nz_fo_per = nz_fo_win / nz_fo,
+            oz_fo = sum(oz_fo),
+            oz_fo_win = sum(oz_fo_win),
+            oz_fo_per = oz_fo_win / oz_fo)
+
+reactable(
+  team_faceoffs,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    result = colDef(sticky = "left", header = ""),
+    fo = colDef(header = "Total FOs"),
+    fo_won = colDef(header = "Total FO Wins"),
+    fo_per = colDef(header = "Total FO %",
+                format = colFormat(digits = 2)),
+    dz_fo = colDef(header = "DZ FOs"),
+    dz_fo_win = colDef(header = "DZ FO Wins"),
+    dz_fo_per = colDef(header = "DZ FO %",
+                format = colFormat(digits = 2)),
+    nz_fo = colDef(header = "NZ FOs"),
+    nz_fo_win = colDef(header = "NZ FO Wins"),
+    nz_fo_per = colDef(header = "NZ FO %",
+                format = colFormat(digits = 2)),
+    oz_fo = colDef(header = "OZ FOs"),
+    oz_fo_win = colDef(header = "OZ FO Wins"),
+    oz_fo_per = colDef(header = "OZ FO %",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Miscellanous
+```{r}
+#| echo: false
+team_misc <- team_stats |>
+  group_by(result) |>
+  summarize(hits_for = mean(hits_for),
+            hits_agst = mean(hits_agst),
+            puck_battles = mean(puck_battles),
+            puck_battles_won = mean(puck_battles_won),
+            total_passes = mean(total_passes),
+            accurate_passes = mean(accurate_passes),
+            takeaways = mean(takeaways),
+            giveaways = mean(giveaways))
+
+reactable(
+  team_misc,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    result = colDef(sticky = "left", header = ""),
+    hits_for = colDef(header = "Hits For",
+                format = colFormat(digits = 2)),
+    hits_agst = colDef(header = "Hits Against",
+                format = colFormat(digits = 2)),
+    puck_battles = colDef(header = "Puck Battles",
+                format = colFormat(digits = 2)),
+    puck_battles_won = colDef(header = "Puck Battles Won",
+                format = colFormat(digits = 2)),
+    total_passes = colDef(header = "Total Passes",
+                format = colFormat(digits = 2)),
+    accurate_passes = colDef(header = "Accurate Passes",
+                format = colFormat(digits = 2)),
+    takeaways = colDef(header = "Takeaways",
+                format = colFormat(digits = 2)),
+    giveaways = colDef(header = "Giveaways",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Zone Entries/Exits
+```{r}
+#| echo: false
+team_entries_exits <- team_stats |>
+  mutate(entries = entries_pass + entries_dumpin + entries_carry,
+         exits = breakout_pass + breakout_dump + breakout_carry) |>
+  group_by(result) |>
+  summarize(entries_pass = sum(entries_pass)/sum(entries),
+            entries_dumpin = sum(entries_dumpin)/sum(entries),
+            entries_carry = sum(entries_carry)/sum(entries),
+            exits_pass = sum(breakout_pass)/sum(exits),
+            exits_dump = sum(breakout_dump)/sum(exits),
+            exits_carry = sum(breakout_carry)/sum(exits))
+
+reactable(
+  team_entries_exits,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    result = colDef(sticky = "left", header = ""),
+    entries_pass = colDef(header = "Entries - Pass",
+                format = colFormat(digits = 2)),
+    entries_dumpin = colDef(header = "Entries - Dump",
+                format = colFormat(digits = 2)),
+    entries_carry = colDef(header = "Entries - Carry",
+                format = colFormat(digits = 2)),
+    exits_pass = colDef(header = "Exits - Pass",
+                format = colFormat(digits = 2)),
+    exits_dump = colDef(header = "Exits - Dump",
+                format = colFormat(digits = 2)),
+    exits_carry = colDef(header = "Exits - Carry",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+:::
+
+```{r}
+#| include: false
+# All
+team_stats |>
+  group_by(result) |>
+  summarize(gp = n(),
+            gf = mean(gf),
+            ga = mean(ga),
+            penalties_for = mean(penalties_for),
+            penalties_agst = mean(penalties_agst),
+            penalties_for_time = mean(penalties_for_time),
+            hits_for = mean(hits_for),
+            hits_agst = mean(hits_agst),
+            fo = sum(fo),
+            fo_won = sum(fo_won),
+            dz_fo = sum(dz_fo),
+            dz_fo_win = sum(dz_fo_win),
+            nz_fo = sum(nz_fo),
+            nz_fo_win = sum(nz_fo_win),
+            oz_fo = sum(oz_fo),
+            oz_fo_win = sum(oz_fo_win),
+            shot_attempts = mean(shot_attempts),
+            sog = mean(sog),
+            corsi_percent = mean(corsi_percent),
+            pp = sum(pp),
+            pp_g = sum(pp_g),
+            pk = sum(pk),
+            pk_kill = sum(pk_kill),
+            shots_blocked = mean(shots_blocked),
+            xG_per_shot = mean(xG_per_shot),
+            opp_xG_per_shot = mean(opp_xG_per_shot),
+            xG = mean(xG),
+            opp_xG = mean(opp_xG),
+            oz_time = mean(oz_time),
+            dz_time = mean(dz_time),
+            puck_battles = mean(puck_battles),
+            puck_battles_won = mean(puck_battles_won),
+            total_passes = mean(total_passes),
+            accurate_passes = mean(accurate_passes),
+            takeaways = mean(takeaways),
+            giveaways = mean(giveaways),
+            entries_pass = mean(entries_pass),
+            entries_dumpin = mean(entries_dumpin),
+            entries_carry = mean(entries_carry),
+            breakout_pass = mean(breakout_pass),
+            breakout_dump = mean(breakout_dump),
+            breakout_carry = mean(breakout_carry))
+```
+
+Some insights:
+
+-   In wins, we have slightly more shots and shot attempts but the expected goals of opponents is higher. Typically less OZ time and more DZ time during wins which is counterintuitive.
+
+-   In wins, powerplay was more effective. No difference in PK%.
+
+-   Overall, faceoffs are under 50%. NZ is our weakest area. In wins, DZ FO % is higher than in losses. 
+
+-   In wins, greater percentage of puck battles won. Slightly more takeaways and slightly less giveaways.
+
+-   In wins, slightly more zone entry carries than dumps.
+
+
+# Player Stats
+
+## Forwards
+
+::: panel-tabset
+## Ice Time
+
+```{r}
+#| echo: false
+forward_icetime <- player_stats |>
+  filter(pos == "F") |>
+  mutate(shifts_per = shifts / gp,
+         pp_time_per = pp_time / gp,
+         sh_time_per = sh_time / gp) |>
+  select(player, gp, shifts_per, 
+         toi_per_gp, pp_time_per, sh_time_per)
+
+reactable(
+  forward_icetime,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    shifts_per = colDef(header = "Shifts/GP",
+                format = colFormat(digits = 2)),
+    toi_per_gp = colDef(header = "TOI/GP",
+                format = colFormat(digits = 2)),
+    pp_time_per = colDef(header = "PP Time/GP",
+                format = colFormat(digits = 2)),
+    sh_time_per = colDef(header = "PK Time/GP",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Box Score
+```{r}
+#| echo: false
+forward_boxscore <- player_stats |>
+  filter(pos == "F") |>
+  mutate(primary_a_per = primary_a / a,
+         ppg = p / gp,
+         plus_minus_per = plus_minus / gp,
+         sc_per = sc / gp,
+         pim_per = pim / gp,
+         hits_pm = hits - hits_agst) |>
+  select(player, gp, g, a, primary_a_per,
+         p, ppg, plus_minus, plus_minus_per, pim, 
+         pim_per, hits_pm)
+
+reactable(
+  forward_boxscore,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    g = colDef(header = "Goals"),
+    a = colDef(header = "Assists"),
+    primary_a_per = colDef(header = "Primary Assist %",
+                format = colFormat(digits = 2)),
+    p = colDef(header = "Points"),
+    ppg = colDef(header = "Points/GP",
+                format = colFormat(digits = 2)),
+    plus_minus = colDef(header = "+/-"),
+    plus_minus_per = colDef(header = "+/- Per GP",
+                format = colFormat(digits = 2)),
+    pim = colDef(header = "PIM"),
+    pim_per = colDef(header = "PIM/GP",
+                format = colFormat(digits = 2)),
+    hits_pm = colDef(header = "Hits +/-",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Shooting
+``` {r}
+#| echo: false
+forward_shooting <- player_stats |>
+  filter(pos == "F") |>
+  mutate(gpg = g / gp,
+         shoot_per = g / sog,
+         shoot_acc = sog / shot_attempts,
+         gax = g - xG) |>
+  select(player, gp, g, gpg, sog, shot_attempts,
+         shoot_per, shoot_acc, gax)
+
+reactable(
+  forward_shooting,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    g = colDef(header = "Goals"),
+    gpg = colDef(header = "Goals/GP",
+                format = colFormat(digits = 2)),
+    sog = colDef(header = "Shots on Goal"),
+    shot_attempts = colDef(header = "Shot Attempts"),
+    shoot_per = colDef(header = "Shooting %",
+                format = colFormat(digits = 2)),
+    shoot_acc = colDef(header = "SOG/Attempt",
+                format = colFormat(digits = 2)),
+    gax = colDef(header = "Goals Above Expected",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Faceoffs
+```{r}
+#| echo: false
+forward_faceoff <- player_stats |>
+  filter(pos == "F") |>
+  filter(fo > 0) |>
+  mutate(fo_per = fo_won / fo,
+         oz_fo_per = oz_fo_win / oz_fo,
+         nz_fo_per = nz_fo_win / nz_fo,
+         dz_fo_per = dz_fo_win / dz_fo) |>
+  select(player, gp, fo, fo_per, oz_fo, oz_fo_per,
+         nz_fo, nz_fo_per, dz_fo, dz_fo_per)
+
+reactable(
+  forward_faceoff,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    fo = colDef(header = "Total FOs"),
+    fo_per = colDef(header = "Total FO %",
+                format = colFormat(digits = 2)),
+    oz_fo = colDef(header = "OZ FOs"),
+    oz_fo_per = colDef(header = "OZ FO %",
+                format = colFormat(digits = 2)),
+    nz_fo = colDef(header = "NZ FOs"),
+    nz_fo_per = colDef(header = "NZ FO %",
+                format = colFormat(digits = 2)),
+    dz_fo = colDef(header = "DZ FOs"),
+    dz_fo_per = colDef(header = "DZ FO %",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Puck Possession
+``` {r}
+#| echo: false
+forward_possession <- player_stats |>
+  filter(pos == "F") |>
+  mutate(team_xG_per = team_xG / toi * 60,
+         opp_xG_per = opp_xG / toi * 60) |>
+  select(player, gp, team_xG, team_xG_per,
+         opp_xG, opp_xG_per, corsi_percent)
+
+reactable(
+  forward_possession,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    team_xG = colDef(header = "Team xG"),
+    team_xG_per = colDef(header = "Team xG/60",
+                format = colFormat(digits = 2)),
+    opp_xG = colDef(header = "Opp xG"),
+    opp_xG_per = colDef(header = "Opp xG/60",
+                format = colFormat(digits = 2)),
+    corsi_percent = colDef(header = "Corsi %",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Miscellanous
+```{r}
+#| echo: false
+forward_misc <- player_stats |>
+  filter(pos == "F") |>
+  mutate(total_passes_per = total_passes / gp,
+         accurate_passes_per = accurate_passes / total_passes,
+         takeaways_per = takeaways / gp,
+         giveaways_per = giveaways / gp) |>
+  select(player, gp, penalties_drawn, shots_blocked,
+         total_passes_per, accurate_passes_per, takeaways_per,
+         giveaways_per)
+
+reactable(
+  forward_misc,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    penalties_drawn = colDef(header = "Penalties Drawn"),
+    shots_blocked = colDef(header = "Shots Blocked"),
+    total_passes_per = colDef(header = "Total Passes/GP",
+                format = colFormat(digits = 2)),
+    accurate_passes_per = colDef(header = "Accurate Passes %",
+                format = colFormat(digits = 2)),
+    takeaways_per = colDef(header = "Takeaways/GP",
+                format = colFormat(digits = 2)),
+    giveaways_per = colDef(header = "Giveaways/GP",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Zone Entries/Exits
+``` {r}
+#| echo: false
+forward_entries_exits <- player_stats |>
+  filter(pos == "F") |>
+  mutate(entries_per = entries / gp,
+         exits_per = breakouts / gp,
+         pass_per_entry = entries_pass / entries,
+         carry_per_entry = entries_carry / entries,
+         dump_per_entry = entries_dumpin / entries,
+         pass_per_exit = breakouts_pass / breakouts,
+         carry_per_exit = breakouts_carry / breakouts,
+         dump_per_exit = breakout_dumpout / breakouts) |>
+  select(player, gp, entries_per, exits_per, 
+         pass_per_entry, carry_per_entry, dump_per_entry,
+         pass_per_exit, carry_per_exit, dump_per_exit)
+
+reactable(
+  forward_entries_exits,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    entries_per = colDef(header = "Entries/GP",
+                format = colFormat(digits = 2)),
+    exits_per = colDef(header = "Exits/GP",
+                format = colFormat(digits = 2)),
+    pass_per_entry = colDef(header = "Passes/Entry",
+                format = colFormat(digits = 2)),
+    carry_per_entry = colDef(header = "Carries/Entry",
+                format = colFormat(digits = 2)),
+    dump_per_entry = colDef(header = "Dump/Entry",
+                format = colFormat(digits = 2)),
+    pass_per_exit = colDef(header = "Passes/Exit",
+                format = colFormat(digits = 2)),
+    carry_per_exit = colDef(header = "Carries/Exit",
+                format = colFormat(digits = 2)),
+    dump_per_exit = colDef(header = "Dump/Exit",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+:::
+
+## Defensemen
+
+::: panel-tabset
+## Ice Time
+
+```{r}
+#| echo: false
+defense_icetime <- player_stats |>
+  filter(pos == "D") |>
+  mutate(shifts_per = shifts / gp,
+         pp_time_per = pp_time / gp,
+         sh_time_per = sh_time / gp) |>
+  select(player, gp, shifts_per, 
+         toi_per_gp, pp_time_per, sh_time_per)
+
+reactable(
+  defense_icetime,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    shifts_per = colDef(header = "Shifts/GP",
+                format = colFormat(digits = 2)),
+    toi_per_gp = colDef(header = "TOI/GP",
+                format = colFormat(digits = 2)),
+    pp_time_per = colDef(header = "PP Time/GP",
+                format = colFormat(digits = 2)),
+    sh_time_per = colDef(header = "PK Time/GP",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Box Score
+```{r}
+#| echo: false
+defense_boxscore <- player_stats |>
+  filter(pos == "D") |>
+  mutate(primary_a_per = primary_a / a,
+         ppg = p / gp,
+         plus_minus_per = plus_minus / gp,
+         sc_per = sc / gp,
+         pim_per = pim / gp,
+         hits_pm = hits - hits_agst) |>
+  select(player, gp, g, a, primary_a_per,
+         p, ppg, plus_minus, plus_minus_per, pim, 
+         pim_per, hits_pm)
+
+reactable(
+  defense_boxscore,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    g = colDef(header = "Goals"),
+    a = colDef(header = "Assists"),
+    primary_a_per = colDef(header = "Primary Assist %",
+                format = colFormat(digits = 2)),
+    p = colDef(header = "Points"),
+    ppg = colDef(header = "Points/GP",
+                format = colFormat(digits = 2)),
+    plus_minus = colDef(header = "+/-"),
+    plus_minus_per = colDef(header = "+/- Per GP",
+                format = colFormat(digits = 2)),
+    pim = colDef(header = "PIM"),
+    pim_per = colDef(header = "PIM/GP",
+                format = colFormat(digits = 2)),
+    hits_pm = colDef(header = "Hits +/-",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Shooting
+``` {r}
+#| echo: false
+defense_shooting <- player_stats |>
+  filter(pos == "D") |>
+  mutate(gpg = g / gp,
+         shoot_per = g / sog,
+         shoot_acc = sog / shot_attempts,
+         gax = g - xG) |>
+  select(player, gp, g, gpg, sog, shot_attempts,
+         shoot_per, shoot_acc, gax)
+
+reactable(
+  defense_shooting,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    g = colDef(header = "Goals"),
+    gpg = colDef(header = "Goals/GP",
+                format = colFormat(digits = 2)),
+    sog = colDef(header = "Shots on Goal"),
+    shot_attempts = colDef(header = "Shot Attempts"),
+    shoot_per = colDef(header = "Shooting %",
+                format = colFormat(digits = 2)),
+    shoot_acc = colDef(header = "SOG/Attempt",
+                format = colFormat(digits = 2)),
+    gax = colDef(header = "Goals Above Expected",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Puck Possession
+``` {r}
+#| echo: false
+defense_possession <- player_stats |>
+  filter(pos == "D") |>
+  mutate(team_xG_per = team_xG / toi * 60,
+         opp_xG_per = opp_xG / toi * 60) |>
+  select(player, gp, team_xG, team_xG_per,
+         opp_xG, opp_xG_per, corsi_percent)
+
+reactable(
+  defense_possession,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    team_xG = colDef(header = "Team xG"),
+    team_xG_per = colDef(header = "Team xG/60",
+                format = colFormat(digits = 2)),
+    opp_xG = colDef(header = "Opp xG"),
+    opp_xG_per = colDef(header = "Opp xG/60",
+                format = colFormat(digits = 2)),
+    corsi_percent = colDef(header = "Corsi %",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Miscellanous
+```{r}
+#| echo: false
+defense_misc <- player_stats |>
+  filter(pos == "D") |>
+  mutate(total_passes_per = total_passes / gp,
+         accurate_passes_per = accurate_passes / total_passes,
+         takeaways_per = takeaways / gp,
+         giveaways_per = giveaways / gp) |>
+  select(player, gp, penalties_drawn, shots_blocked,
+         total_passes_per, accurate_passes_per, takeaways_per,
+         giveaways_per)
+
+reactable(
+  defense_misc,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    penalties_drawn = colDef(header = "Penalties Drawn"),
+    shots_blocked = colDef(header = "Shots Blocked"),
+    total_passes_per = colDef(header = "Total Passes/GP",
+                format = colFormat(digits = 2)),
+    accurate_passes_per = colDef(header = "Accurate Passes %",
+                format = colFormat(digits = 2)),
+    takeaways_per = colDef(header = "Takeaways/GP",
+                format = colFormat(digits = 2)),
+    giveaways_per = colDef(header = "Giveaways/GP",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+## Zone Entries/Exits
+``` {r}
+#| echo: false
+defense_entries_exits <- player_stats |>
+  filter(pos == "D") |>
+  mutate(entries_per = entries / gp,
+         exits_per = breakouts / gp,
+         pass_per_entry = entries_pass / entries,
+         carry_per_entry = entries_carry / entries,
+         dump_per_entry = entries_dumpin / entries,
+         pass_per_exit = breakouts_pass / breakouts,
+         carry_per_exit = breakouts_carry / breakouts,
+         dump_per_exit = breakout_dumpout / breakouts) |>
+  select(player, gp, entries_per, exits_per, 
+         pass_per_entry, carry_per_entry, dump_per_entry,
+         pass_per_exit, carry_per_exit, dump_per_exit)
+
+reactable(
+  defense_entries_exits,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    entries_per = colDef(header = "Entries/GP",
+                format = colFormat(digits = 2)),
+    exits_per = colDef(header = "Exits/GP",
+                format = colFormat(digits = 2)),
+    pass_per_entry = colDef(header = "Passes/Entry",
+                format = colFormat(digits = 2)),
+    carry_per_entry = colDef(header = "Carries/Entry",
+                format = colFormat(digits = 2)),
+    dump_per_entry = colDef(header = "Dump/Entry",
+                format = colFormat(digits = 2)),
+    pass_per_exit = colDef(header = "Passes/Exit",
+                format = colFormat(digits = 2)),
+    carry_per_exit = colDef(header = "Carries/Exit",
+                format = colFormat(digits = 2)),
+    dump_per_exit = colDef(header = "Dump/Exit",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+:::
+
+Some insights on forwards:
+
+-   Cole Fraser leading plus/minus across all games.
+
+-   Grein, Popple, and Phibbs had the lowest hits +/- meaning they get hit frequently or don't hit themselves. 
+
+-   Despite 2nd on the team in goals, Murray was in the lower half of shooting % and SOG/attempt.
+
+-   Grein and Fraser were top of faceoff %. Look at Fishman to take over Popple's OZ FO role. 
+
+-   Expected goals is highest when Murray, Bierd, and Pierce are on the ice. 
+
+-   Accurate pass percentage is highest for Murray, Bierd, and Pierce. 
+
+\
+Some insights on defensemen:
+
+-   Rose is able to put a high percentage of attempted shots on goal but expect his shooting % of 20% to regress. 
+
+-   McKinney and Rose leading expected goals for and against cateogry, as well as most accurate passes.
+
+-   Despite injuries, Robinson had the poorest possession numbers. The pair with the worst was Ruscheinski and Hendry. 
+
+
+## Overall Player Impact
+```{r}
+#| echo: false
+ggplot(player_stats,
+       aes(x = team_xG,
+           y = opp_xG)) +
+  geom_point(aes(size = toi_per_gp), alpha = 0.25) +
+  geom_text(aes(label = number), color = "black", size = 3) +
+  theme_minimal() +
+  scale_size(range = c(0, 10)) +
+  labs(x = "Team xG when on ice",
+       y = "Opp xG when on ice",
+       size = "TOI/GP") +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed")
+```
+
+This is a great summary of player impact. The biggest takeaway is that for the majority of the team, the opponent's expected goals are highest than ours. This indicates poor puck possession as a team. 
+
+However, we can see the most impactful players - Murray, McKinney, and Pierce - to the right of the dotted line. Some of the least impactful players - Ruscheinski, Robinson, Phibbs - to the left of the dotted line. 
+
+# Goalie Stats
+
+```{r}
+#| echo: false
+goalie_summary <- goalie_stats |>
+  select(player, gp, toi, ga, sa, saves, passes, accurate_passes,
+         xG_conceded, xG_per_shot) |>
+  mutate(gaa = ga/toi*60,
+         sv_per = saves / sa,
+         pass_per = accurate_passes / passes,
+         gsax = xG_conceded - ga) # Goals saved above expected
+
+reactable(
+  goalie_summary,
+  defaultColDef = colDef(minWidth = 175),
+  columns = list(
+    player = colDef(
+      sticky = "left", # Freeze the first column
+      header = "Player",
+      width = 175
+    ),
+    gp = colDef(header = "GP"),
+    toi = colDef(header = "TOI",
+                 format = colFormat(digits = 2)),
+    ga = colDef(header = "Goals Against"),
+    sa = colDef(header = "Shots Against"),
+    saves = colDef(header = "Saves"),
+    gaa = colDef(header = "GAA",
+                format = colFormat(digits = 2)),
+    sv_per = colDef(header = "SV%",
+                format = colFormat(digits = 3)),
+    passes = colDef(header = "Passes"),
+    accurate_passes = colDef(header = "Accurate Passes"),
+    pass_per = colDef(header = "Passing %",
+                format = colFormat(digits = 2)),
+    xG_conceded = colDef(header = "xG"),
+    xG_per_shot = colDef(header = "xG/Shot",
+                         format = colFormat(digits = 2)),
+    gsax = colDef(header = "Goals Saved Above Expected",
+                format = colFormat(digits = 2))
+  ),
+  highlight = TRUE, # Highlight rows on hover
+  bordered = TRUE, # Add borders
+  defaultPageSize = 10, # Set default rows per page
+  paginationType = "simple"
+)
+```
+
+# Future Ideas
+
+-   League translation factors: Compare how players do during their last year of junior and their first year of OUA Waterloo Warriors under coach Brian Bourque. Potential to predict G-A-P for incoming recruits. Would need a lot of junior data to be scraped.
+

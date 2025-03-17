@@ -4,3 +4,5 @@ format: html
 ---
 
 [2024-25 - Midseason Report](https://uwaggs.github.io/mhky_reports/midseason_report_2425.html)
+
+[2024-25 - End of Season Report](https://uwaggs.github.io/mhky_reports/endofseason_report_2425.html)
